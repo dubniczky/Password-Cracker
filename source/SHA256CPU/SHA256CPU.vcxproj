@@ -18,6 +18,13 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="sha256.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sha256.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{BC856B90-408A-4503-B45E-7487EDAA4647}</ProjectGuid>
@@ -146,13 +153,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\main.cpp" />
-    <ClCompile Include="..\..\sha256.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\sha256.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

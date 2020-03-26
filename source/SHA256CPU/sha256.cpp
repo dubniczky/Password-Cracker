@@ -30,18 +30,23 @@ void SHA256::transform(const unsigned char* message, unsigned int block_nb)
     const unsigned char* sub_block;
     int i;
     int j;
-    for (i = 0; i < (int)block_nb; i++) {
+    for (i = 0; i < (int)block_nb; i++)
+    {
         sub_block = message + (i << 6);
-        for (j = 0; j < 16; j++) {
+        for (j = 0; j < 16; j++)
+        {
             SHA2_PACK32(&sub_block[j << 2], &w[j]);
         }
-        for (j = 16; j < 64; j++) {
+        for (j = 16; j < 64; j++)
+        {
             w[j] = SHA256_F4(w[j - 2]) + w[j - 7] + SHA256_F3(w[j - 15]) + w[j - 16];
         }
-        for (j = 0; j < 8; j++) {
+        for (j = 0; j < 8; j++)
+        {
             wv[j] = m_h[j];
         }
-        for (j = 0; j < 64; j++) {
+        for (j = 0; j < 64; j++)
+        {
             t1 = wv[7] + SHA256_F2(wv[4]) + SHA2_CH(wv[4], wv[5], wv[6])
                 + sha256_k[j] + w[j];
             t2 = SHA256_F1(wv[0]) + SHA2_MAJ(wv[0], wv[1], wv[2]);
@@ -54,7 +59,8 @@ void SHA256::transform(const unsigned char* message, unsigned int block_nb)
             wv[1] = wv[0];
             wv[0] = t1 + t2;
         }
-        for (j = 0; j < 8; j++) {
+        for (j = 0; j < 8; j++)
+        {
             m_h[j] += wv[j];
         }
     }

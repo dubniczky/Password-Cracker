@@ -109,15 +109,15 @@ void SHA256::final(unsigned char* digest)
     unsigned int pm_len;
     unsigned int len_b;
     int i;
-    block_nb = (1 + ((SHA224_256_BLOCK_SIZE - 9)
-        < (m_len % SHA224_256_BLOCK_SIZE)));
+    block_nb = (1 + ((SHA224_256_BLOCK_SIZE - 9) < (m_len % SHA224_256_BLOCK_SIZE)));
     len_b = (m_tot_len + m_len) << 3;
     pm_len = block_nb << 6;
     memset(m_block + m_len, 0, pm_len - m_len);
     m_block[m_len] = 0x80;
     SHA2_UNPACK32(len_b, m_block + pm_len - 4);
     transform(m_block, block_nb);
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++)
+    {
         SHA2_UNPACK32(m_h[i], &digest[i << 2]);
     }
 }
@@ -135,6 +135,8 @@ std::string sha256(std::string input)
     char buf[2 * SHA256::DIGEST_SIZE + 1];
     buf[2 * SHA256::DIGEST_SIZE] = 0;
     for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
+    {
         sprintf(buf + i * 2, "%02x", digest[i]);
+    }       
     return std::string(buf);
 }

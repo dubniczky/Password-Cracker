@@ -8,10 +8,10 @@ by: Richard Nagy
 4. Implementing the algorithm on GPU in OpenCL
 
 ## Resources:
-[Wikipedia: SHA-2](https://en.wikipedia.org/wiki/SHA-2)
-[Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64)
-[Wikipedia: Salt (Crypgoraphy)](https://en.wikipedia.org/wiki/Salt_(cryptography))
-[Have I been pwned: password list](https://haveibeenpwned.com/Passwords)
+* [Wikipedia: SHA-2](https://en.wikipedia.org/wiki/SHA-2)
+* [Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64)
+* [Wikipedia: Salt (Crypgoraphy)](https://en.wikipedia.org/wiki/Salt_(cryptography))
+* [Have I been pwned: password list](https://haveibeenpwned.com/Passwords)
 
 ## Baseline hardware:
 * __CPU:__ Ryzen 7 2700X 8c/16t 4.00Ghz base clock

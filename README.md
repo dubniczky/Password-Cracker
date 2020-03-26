@@ -36,13 +36,13 @@ const char* hash = sha256("mypassword");
 ## Milestone 2: cracking using password-table *(completed)*
 With the algorithm working, we can start implementing the actual cracking. We read one file, with an unknown hash
 
-*target.txt:*``b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e``
+*target.txt:* ``b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e``
 
 The file contains the SHA-256 hashed verison of the password: ``banana``. Then we read a list of passwords that are commonly used according to data leaks.
 
-*passwords.txt:*``12345 abc123 password passwd 123456 newpass ...``
+*passwords.txt:* ``12345 abc123 password passwd 123456 newpass ...``
 
-I am going to be using 3 versions in my project:
+There are 3 main sample files in the project:
 
 |Count|File|
 |---|---|
@@ -110,6 +110,7 @@ Search time: 3106065 microseconds
 ```
 So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds` = `3.106065 seconds`.
 `100,000/3.106065 = 32,195.0764...` => `32.196 khcps`. This method seems about `9%` slower.
+
 |Method|Speed|Relative|
 |---|---|---|
 |Hash|35.353 khcps|100%|

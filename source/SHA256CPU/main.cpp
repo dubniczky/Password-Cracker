@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 {
     if (argc < 3)
     {
-        printf("2 parameters required.\nsha256.exe <target-file> <table-file>");
+        printf("2 parameters required.\ncrack.exe <target-file> <table-file>");
         return 1;
     }
     string targetName = argv[1];
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     //Check result
     if (index < hashTable.size())
     {
-        printf("\nMatch found: %s\n", current.c_str());
+        printf("\nMatch found: %s\n", hashTable[index].c_str());
         printf("Checked lines: %i\n", index + 1);
         printf("Search time: %lld microseconds\n", microseconds);
     }

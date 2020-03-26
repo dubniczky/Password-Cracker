@@ -81,14 +81,14 @@ So hashing and comparing ``100,000`` entries took ``2,828,609 microseconds`` = `
 ## Milestone 3: Implementing Salt *(current)*
 The current method of cracking seems unnecessary, since we could just pre-calculate the hashes and start comparing every time, without needing to do the hashing every time.
 
-This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for __banana__ with 4 byte salts:
-``banana`` => ``bananakQ9wvI9A`` => ``50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``
-``banana`` => ``bananaJoz1BL1T`` => ``7da2b105a959cff3b2c03c0c15fa11fa124636a21451eeead00cb7654c664f7e``
-The same password can take up multiple forms, thus making so that if a hash is cracked, we are still unable to match every single instance of the same password.
+This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for __banana__ with 4 byte salts:  
+``banana`` => ``bananakQ9wvI9A`` => ``50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``  
+``banana`` => ``bananaJoz1BL1T`` => ``7da2b105a959cff3b2c03c0c15fa11fa124636a21451eeead00cb7654c664f7e``  
+The same password can take up multiple forms, thus making so that if a hash is cracked, we are still unable to match every single instance of the same password.  
 
-Now however, we will need the salt to store the password aswell, so we are just going to append it to the start of the hash:
-``kQ9wvI9A`` ``50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``
-``kQ9wvI9A50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``
+Now however, we will need the salt to store the password aswell, so we are just going to append it to the start of the hash:  
+``kQ9wvI9A`` ``50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``  
+``kQ9wvI9A50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``  
 We of course know, that this is a 256 bit hash, so there must be 64 characters for the hash, and every single before that is the salt. Te length of the salt can be any number of characters, so we have to be flexible about that.
 
 

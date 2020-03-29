@@ -1,4 +1,5 @@
 
+
 # Password Hash Cracking on GPU
 by: Richard Nagy
 
@@ -18,9 +19,9 @@ by: Richard Nagy
 | Component | Actual |
 |---|---|
 |__MB__|ASUS Prime X470-PRO|
-|__CPU__|Ryzen 7 2700X 8c/16t 4.00Ghz @ base clock|
-|__RAM__|2x8Gb 2400Mhz DDR4 dual channel|
-|__GPU__|Nvidia Geforce GTX 1070|
+|__CPU__|Ryzen 7 2700X *8c/16t 4.00Ghz @ base clock*|
+|__RAM__|Corsair Vengeance 2x8Gb 2400Mhz DDR4 dual channel|
+|__GPU__|Nvidia Geforce GTX 1070: *6.463 Teraflops*|
 |__SSD__|Samsung 970 EVO 250Gb|
 
 ## Milestone 1: implementing on CPU *(completed)*
@@ -73,7 +74,7 @@ Search time: 2828609 microseconds
 So hashing and comparing ``100,000`` entries took ``2,828,609 microseconds`` = ``2.828609 seconds``. As a baseline, we are going to use a custom metric: __hashcomp/sec (hcps)__.
 `100,000/2.828609 = 35,353.0658...` so we are at about ``35.353 khcps``.
 
-## Milestone 3: Implementing Salt *(current)*
+## Milestone 3: Implementing salt *(completed)*
 The current method of cracking seems unnecessary, since we could just pre-calculate the hashes and start comparing every time, without needing to do the hashing every time.
 
 This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for __banana__ with 4 byte salts:  
@@ -115,3 +116,67 @@ So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds
 |---|---|---|
 |Hash|35.353 khcps|100%|
 |Salted|32.196 khcps|91%|
+
+## Milestone 4: implementing SHA-256 on GPU *(completed)*
+In this step, the most difficult part is of course writing the kernel itself. It has to be able to calculate a single hash given a string and its length. I decided against doing string operations on the GPU too much, so the result is going to be an **unsigned int** array. The result length is fixed, so there will be no problems with that.
+
+Kernel definition: (hash_single.kernel.ci)
+```opencl
+__kernel void sha256kernel(__global const uint* key_length,
+                           __global const char* key,
+                           __global uint* result)
+```
+We can then feed the information using global memory buffers. Previously we defined some macros to speed up the code, which is not going to be necessary in this case, since the compiler merges every **__local inline** method into the kernel.
+
+Example:
+```opencl
+__local inline uint rotr(uint x, int n)
+{
+    if (n < 32) return (x >> n) | (x << (32 - n));
+    return x;
+}
+__local inline uint sig0(uint x)
+{
+    return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
+}
+```
+Gets merged into:
+```opencl
+__local inline uint sig0(uint x)
+{
+    return ((2  < 32) ? (x >> 2)  | (x << (32 - 2)  : x) ^
+           ((13 < 32) ? (x >> 13) | (x << (32 - 13) : x) ^
+           ((22 < 32) ? (x >> 22) | (x << (32 - 22) : x);
+}
+```
+Then simplified into:
+```opencl
+__local inline uint sig0(uint x)
+{
+    return ((x >> 2)  | (x << (30))) ^
+           ((x >> 13) | (x << (19))) ^
+           ((x >> 22) | (x << (10)));
+}
+```
+Then inserted into the kernel calls as:
+```opencl
+( ((x>>2)|(x<<(30)))^((x>>13)|(x<<(19)))^((x>>22)|(x<<(10))) )
+```
+
+So we are doing this for every single method.
+```opencl
+__local inline uint rotr(uint x, int n)
+__local inline uint ch(uint x, uint y, uint z)
+__local inline uint maj(uint x, uint y, uint z)
+__local inline uint sig0(uint x)
+__local inline uint sig1(uint x)
+__local inline uint ep0(uint x)
+__local inline uint ep1(uint x)
+```
+But the definition for the 256bit context is still going to be done using the preprocessor with 8 32bit integers corresponding to the **Rosetta Code**
+|H0|H1|H2|H3|H4|H5|H6|H7|
+|---|---|---|---|---|---|---|---|
+|0x6a09e667|0xbb67ae85|0x3c6ef372|0xa54ff53a|0x510e527f|0x9b05688c|0x1f83d9ab|0x5be0cd19|
+Which gets folded into: 
+`764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF`
+This will serve as our starting point to the algorithm.

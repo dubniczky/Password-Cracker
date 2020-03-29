@@ -187,6 +187,7 @@ But the definition for the 256bit context is still going to be done using the pr
 |H0|H1|H2|H3|H4|H5|H6|H7|
 |---|---|---|---|---|---|---|---|
 |0x6a09e667|0xbb67ae85|0x3c6ef372|0xa54ff53a|0x510e527f|0x9b05688c|0x1f83d9ab|0x5be0cd19|
+
 Which gets folded into:  
 `764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF` 
 This will serve as our starting point to the algorithm.

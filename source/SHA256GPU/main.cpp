@@ -15,28 +15,77 @@
 using cl::vector;
 using namespace cl;
 
-void printPlatformDetails();
-void createHash(string);
+void platform();
+void singleHash(string);
+void singleHashSalted(string, string);
 void createHashes(string);
 
 const int KEY_SIZE = 64;
 const int HASH_SIZE = 64;
 const int HASH_RESULT_SIZE = 8;
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
-	/*if (argc == 1)
+	//No arguments
+	if (argc < 2)
 	{
 		printf("platform                               : list platforms\n");
 		printf("hash single <password>                 : hash a single password\n");
-		printf("hash multiple <input.txt> <output.txt> : hash a single password\n");
+		printf("hash multiple <input.txt> <output.txt> : hash a multiple passwords\n");
 		return 0;
-	}*/
+	}
 
-	
+	//Platform
+	if (strcmp(argv[1], "platform") == 0)
+	{
+		platform();
+	}
+	//Hash
+	else if (strcmp(argv[1], "hash") == 0)
+	{
+		if (argc < 3)
+		{
+			printf("single or multiple\n");
+			return 0;
+		}
 
-	string key = "banana";
-	createHash(key);
+		if (strcmp(argv[2], "single") == 0)
+		{
+			if (argc < 4)
+			{
+				printf("<password>\n");
+				return 0;
+			}
+
+			if (argc < 5)
+			{
+				string key(argv[3]);
+				singleHash(key);
+			}
+			else
+			{
+				string key(argv[3]);
+				string salt(argv[4]);
+				singleHashSalted(key, salt);
+			}
+		}
+		else if (strcmp(argv[2], "multiple") == 0)
+		{
+			if (argc < 4)
+			{
+				printf("<input.txt> <output.txt>\n");
+				return 0;
+			}
+		}
+		else
+		{
+			printf("single or multiple\n");
+			return 0;
+		}
+	}
+
+	//string key = "banana";
+	//createHash(key);
 
 	//string file = "../passwords/passwords-100.txt";
 	//createHashes(file);
@@ -44,7 +93,7 @@ int main(int argc, const char* argv[])
 	return 0;
 }
 
-void printPlatformDetails()
+void platform()
 {
 	try
 	{
@@ -110,7 +159,7 @@ void printPlatformDetails()
 	}
 }
 
-void createHash(string key)
+void singleHash(string key)
 {
 	try
 	{
@@ -193,13 +242,123 @@ void createHash(string key)
 		queue.enqueueReadBuffer(buffer3, CL_TRUE, 0, sizeof(cl_uint) * HASH_RESULT_SIZE, result);
 
 		//Assemble result
-		std::cout << result;
 		char* out = new char[65];
 		for (int i = 0; i < HASH_RESULT_SIZE; i++)
 		{
 			sprintf(out + i*8, "%08x", result[i]);
 		}
-		printf("\nHash: %s", out);
+		printf("%s\n", out);
+	}
+	catch (Error error)
+	{
+		oclPrintError(error);
+	}
+}
+void singleHashSalted(string key, string salt)
+{
+	try
+	{
+		// Get available platforms
+		vector<Platform> platforms;
+		Platform::get(&platforms);
+
+		vector<Device> devices;
+		Context context;
+
+		for (Platform p : platforms)
+		{
+
+			try
+			{
+				// Select the default platform and create a context using this platform and the GPU
+				cl_context_properties cps[3] =
+				{
+					CL_CONTEXT_PLATFORM,
+					(cl_context_properties)(p)(),
+					0
+				};
+
+				context = Context(CL_DEVICE_TYPE_GPU, cps);
+				devices = context.getInfo<CL_CONTEXT_DEVICES>();
+			}
+			catch (Error error)
+			{
+				oclPrintError(error);
+				continue;
+			}
+
+			if (devices.size() > 0)
+				break;
+		}
+
+		if (devices.size() == 0)
+		{
+			throw Error(CL_INVALID_CONTEXT, "Failed to create a valid context!");
+		}
+
+		//Command queue on the first device
+		CommandQueue queue = CommandQueue(context, devices[0]);
+
+		//Compile kernel
+		std::ifstream sourceFile("hash_single_salt.kernel.cl");
+		std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
+			(std::istreambuf_iterator<char>()));
+		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
+		Program program = Program(context, source);
+		program.build(devices); //Configure for current device
+
+		//Kernel target
+		Kernel kernel(program, "sha256kernel_salted");
+
+		//Prepare input
+		cl_uint saltLength = salt.length();
+		const char* csalt = salt.c_str();
+		cl_uint keyLength = key.length();
+		const char* ckey = key.c_str();
+
+		
+		/* DEBUG
+		printf("%d\n", saltLength);
+		printf("%d\n", keyLength);
+		printf("%s\n", csalt);
+		printf("%s\n", ckey);
+		*/
+
+		// Create memory buffers
+		Buffer saltSizeBuffer = Buffer(context, CL_MEM_READ_ONLY, sizeof(cl_uint));
+		Buffer saltBuffer = Buffer(context, CL_MEM_READ_ONLY, saltLength);
+		Buffer keySizeBuffer = Buffer(context, CL_MEM_READ_ONLY, sizeof(cl_uint));
+		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, keyLength + saltLength);
+		Buffer hashOutBuffer = Buffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint) * HASH_RESULT_SIZE);
+
+		// Write data on input buffers!
+		queue.enqueueWriteBuffer(saltSizeBuffer, CL_TRUE, 0, sizeof(cl_uint), &saltLength);
+		queue.enqueueWriteBuffer(saltBuffer, CL_TRUE, 0, saltLength, csalt);
+		queue.enqueueWriteBuffer(keySizeBuffer, CL_TRUE, 0, sizeof(cl_uint), &keyLength);
+		queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, keyLength, ckey);
+
+		// Set arguments to kernel
+		kernel.setArg(0, saltSizeBuffer);
+		kernel.setArg(1, saltBuffer);
+		kernel.setArg(2, keySizeBuffer);
+		kernel.setArg(3, keyBuffer);
+		kernel.setArg(4, hashOutBuffer);
+
+		// Run the kernel on specific ND range
+		NDRange _global_(1);
+		queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange);
+
+		// Read buffer C (the result) into a local piece of memory
+		cl_uint* result = new cl_uint[sizeof(cl_uint) * HASH_RESULT_SIZE];
+		queue.enqueueReadBuffer(hashOutBuffer, CL_TRUE, 0, sizeof(cl_uint) * HASH_RESULT_SIZE, result);
+
+		//Assemble result
+		char* out = new char[65];
+		for (int i = 0; i < HASH_RESULT_SIZE; i++)
+		{
+			sprintf(out + i * 8, "%08x", result[i]);
+		}
+		printf("%s\n", out);
 	}
 	catch (Error error)
 	{

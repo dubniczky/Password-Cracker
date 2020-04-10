@@ -26,5 +26,8 @@
     <None Include="hash_multiple.kernel.cl">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="hash_single_salt.kernel.cl">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

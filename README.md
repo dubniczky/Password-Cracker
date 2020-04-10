@@ -1,3 +1,4 @@
+
 # Password Hash Cracking on GPU
 by: Richard Nagy
 
@@ -7,9 +8,9 @@ by: Richard Nagy
 2. Creating a linear password cracker using a table from file
 3. Implementing salt into the algorithm
 4. Implementing the algorithm on GPU in OpenCL
-5. **Implementing hash compare on GPU (current)**
-6. Feeding in continuous data to compare
-7. Optimizing kernel
+6. **Implementing hash compare on GPU (current)**
+7. Feeding in continuous data to compare
+8. Optimizing kernel
 
 
 ## Resources:
@@ -191,6 +192,23 @@ But the definition for the 256bit context is still going to be done using the pr
 Which gets folded into:  
 `764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF` 
 This will serve as our starting point to the algorithm.
+
+After implementing the standard hashing, we will add salt as well. Appending the salt to the end of the password ought to be done on the GPU itself. This way the process will be parallel and less data will be copied between hardware. New kernel:
+```opencl
+__kernel
+void sha256kernel_salted(__global uint* salt_length,
+                         __global char* salt,
+                         __global uint* key_length,
+                         __global char* key,
+                         __global uint* result)
+```
+
+We now have an increasing amount of features, so separating them is the next step.
+```
+gpu platform
+gpu hash single mypassword
+gpu hash single mypassword mysalt
+```
 
 
 ## Milestone 5: Implementing hash compare on GPU (current)*

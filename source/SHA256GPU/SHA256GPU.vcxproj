@@ -155,6 +155,7 @@
   <ItemGroup>
     <None Include="hash_multiple.kernel.cl" />
     <None Include="hash_single.kernel.cl" />
+    <None Include="hash_single_salt.kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

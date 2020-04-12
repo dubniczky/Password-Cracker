@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <chrono> 
 
 #include <CL/cl.hpp>
 #include <utility>
@@ -14,15 +15,18 @@
 
 using cl::vector;
 using namespace cl;
+using namespace std::chrono;
 
 void platform();
 void singleHash(string);
 void singleHashSalted(string, string);
 void createHashes(string);
+void multiHash(string, string);
 
 const int KEY_SIZE = 64;
 const int HASH_SIZE = 64;
 const int HASH_RESULT_SIZE = 8;
+int HASH_THREAD_COUNT = 10;
 
 int main(int argc, char* argv[])
 {
@@ -31,7 +35,7 @@ int main(int argc, char* argv[])
 	{
 		printf("platform                               : list platforms\n");
 		printf("hash single <password>                 : hash a single password\n");
-		printf("hash multiple <input.txt> <output.txt> : hash a multiple passwords\n");
+		printf("hash multiple <input.txt> <output.txt> : hash multiple passwords\n");
 		return 0;
 	}
 
@@ -71,10 +75,16 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(argv[2], "multiple") == 0)
 		{
-			if (argc < 4)
+			if (argc < 5)
 			{
 				printf("<input.txt> <output.txt>\n");
 				return 0;
+			}
+			else
+			{
+				string infile(argv[3]);
+				string outfile(argv[4]);
+				multiHash(infile, outfile);
 			}
 		}
 		else
@@ -365,19 +375,20 @@ void singleHashSalted(string key, string salt)
 		oclPrintError(error);
 	}
 }
-
-void createHashes(string file)
+void multiHash(string infileName, string outfileName)
 {
+	Program program;
+	vector<Device> devices;
 	try
 	{
+		printf("Compiling kernel...\n");
 		// Get available platforms
 		vector<Platform> platforms;
 		Platform::get(&platforms);
-
-		vector<Device> devices;
+		
 		Context context;
 
-		for (auto p : platforms)
+		for (Platform p : platforms)
 		{
 
 			try
@@ -412,58 +423,129 @@ void createHashes(string file)
 		CommandQueue queue = CommandQueue(context, devices[0]);
 
 		//Compile kernel
-		std::ifstream sourceFile("hash_kernel.cl");
+		std::ifstream sourceFile("hash_multiple.kernel.cl");
 		std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
 			(std::istreambuf_iterator<char>()));
 		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
-		Program program = Program(context, source);
+		program = Program(context, source);
 		program.build(devices); //Configure for current device
 
 		//Kernel target
-		Kernel kernel(program, "sha256kernel");
+		Kernel kernel(program, "sha256kernel_multiple");
+		printf("Kernel compiled.\n");
 
-		// Create memory buffers
-		// 2 × input buffer, 1 × output buffer
-		const char target[] = "banana";
-		int s = sizeof(target);
-		Buffer buffer1 = Buffer(context, CL_MEM_READ_ONLY, sizeof(unsigned int) * 3);
-		Buffer buffer2 = Buffer(context, CL_MEM_READ_ONLY, sizeof(target));
-		Buffer buffer3 = Buffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint) * HASH_RESULT_SIZE);
-
-		// Copy lists A and B to the memory buffers
-		/// Write data on input buffers!
-		unsigned int args[] =
+		//Prepare input
+		printf("Reading file...\n");
+		std::vector<std::string> lines;
+		std::string line;
+		std::ifstream infile(infileName.c_str());
+		while (std::getline(infile, line))
 		{
-			64, 1, sizeof(target) - 1
-		};
-
-		queue.enqueueWriteBuffer(buffer1, CL_TRUE, 0, sizeof(unsigned int) * 3, args);
-		queue.enqueueWriteBuffer(buffer2, CL_TRUE, 0, sizeof(target), target);
-
-		// Set arguments to kernel
-		kernel.setArg(0, buffer1);
-		kernel.setArg(1, buffer2);
-		kernel.setArg(2, buffer3);
-
-		// Run the kernel on specific ND range
-		NDRange _global_(1);
-		queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange);
-
-		// Read buffer C (the result) into a local piece of memory
-		cl_uint* C = new cl_uint[sizeof(cl_uint) * HASH_RESULT_SIZE];
-		queue.enqueueReadBuffer(buffer3, CL_TRUE, 0, sizeof(cl_uint) * HASH_RESULT_SIZE, C);
-
-		//Assemble result
-		std::cout << C;
-		char* out = new char[65];
-		for (int i = 0; i < HASH_RESULT_SIZE; i++)
-		{
-			sprintf(out + i * 8, "%08x", C[i]);
+			lines.push_back(line);
 		}
-		printf("\nHash: %s", out);
+		infile.close();
+		printf("Read %d lines.\n", lines.size());
+
+		HASH_THREAD_COUNT = 256;
+		int iterations = (lines.size() / HASH_THREAD_COUNT) + (lines.size() / HASH_THREAD_COUNT > 0 ? 1 : 0);
+		//cl::Event* events = new cl::Event[iterations];
+		
+		printf("Starting kernel...\n");
+
+		std::ofstream outFile(outfileName.c_str());
+		auto startTime = high_resolution_clock::now();
+		for (int i = 0; i < iterations; i++)
+		{
+			int start = i * HASH_THREAD_COUNT;
+			if (i == iterations - 1)
+			{
+				HASH_THREAD_COUNT = lines.size() % HASH_THREAD_COUNT;
+			}
+
+			//Longest string
+			cl_uint longest = 0;
+			for (int j = 0; j < HASH_THREAD_COUNT; j++)
+			{
+				if (lines[start + j].length() > longest)
+				{
+					longest = lines[start + j].length();
+				}
+			}
+			longest += 1;
+			cl_uint bufferSize = HASH_THREAD_COUNT * longest;
+
+			//Prepare buffer
+			char* strBuffer = new char[bufferSize];
+			for (int j = 0; j < HASH_THREAD_COUNT; j++)
+			{
+				strcpy(&strBuffer[j * longest], lines[start + j].c_str());
+			}
+
+			// Create memory buffers
+			Buffer keySizeBuffer = Buffer(context, CL_MEM_READ_ONLY, sizeof(cl_uint));
+			Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, bufferSize);
+			Buffer hashOutBuffer = Buffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint) * HASH_RESULT_SIZE * HASH_THREAD_COUNT);
+
+			// Write data on input buffers!
+			queue.enqueueWriteBuffer(keySizeBuffer, CL_TRUE, 0, sizeof(cl_uint), &longest);
+			queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, bufferSize, strBuffer);
+
+			// Set arguments to kernel
+			kernel.setArg(0, keySizeBuffer);
+			kernel.setArg(1, keyBuffer);
+			kernel.setArg(2, hashOutBuffer);
+
+			// Run the kernel on specific ND range
+			NDRange _global_(HASH_THREAD_COUNT);
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange);
+
+			// Read buffer C (the result) into a local piece of memory
+			cl_uint* result = new cl_uint[sizeof(cl_uint) * HASH_RESULT_SIZE * HASH_THREAD_COUNT];
+			queue.enqueueReadBuffer(hashOutBuffer, CL_TRUE, 0, sizeof(cl_uint) * HASH_RESULT_SIZE * HASH_THREAD_COUNT, result);
+
+			for (int i = 0; i < HASH_THREAD_COUNT; i++)
+			{
+				char* out = new char[65];
+				for (int j = 0; j < HASH_RESULT_SIZE; j++)
+				{
+					sprintf(out + j * 8, "%08x", result[(i * 8) + j]);
+				}
+				outFile << out << std::endl;
+			}
+		}
+
+		auto stopTime = high_resolution_clock::now();
+		auto duration = duration_cast<microseconds>(stopTime - startTime);
+
+		printf("Kernel completed.\n");
+		printf("Runtime: %d microseconds.\n", duration);
+
+		printf("Saving result to file...\n");
+		outFile.close();
+		printf("File saved.\n");
+
+		//delete[] events;
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+
+
+		if (error.err() == CL_BUILD_PROGRAM_FAILURE)
+		{
+			for (cl::Device dev : devices)
+			{
+				// Check the build status
+				cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(dev);
+				if (status != CL_BUILD_ERROR)
+					continue;
+
+				// Get the build log
+				std::string name = dev.getInfo<CL_DEVICE_NAME>();
+				std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(dev);
+				std::cerr << "Build log for " << name << ":" << std::endl
+					<< buildlog << std::endl;
+			}
+		}
 	}
 }

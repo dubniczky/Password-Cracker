@@ -13,21 +13,32 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Kernels">
+      <UniqueIdentifier>{519487e5-3a12-48d5-ba35-c8da4d3eebd9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GPUController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="hash_single.kernel.cl">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="hash_multiple.kernel.cl">
-      <Filter>Source Files</Filter>
+      <Filter>Kernels</Filter>
+    </None>
+    <None Include="hash_single.kernel.cl">
+      <Filter>Kernels</Filter>
     </None>
     <None Include="hash_single_salt.kernel.cl">
-      <Filter>Source Files</Filter>
+      <Filter>Kernels</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GPUController.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -14,42 +14,41 @@
 
 
 //Methods
-__local inline uint rotr(uint x, int n)
+inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
 
     //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
-__local inline uint ch(uint x, uint y, uint z)
+inline uint ch(uint x, uint y, uint z)
 {
     return (x & y) ^ (~x & z);
 }
-__local inline uint maj(uint x, uint y, uint z)
+inline uint maj(uint x, uint y, uint z)
 {
     return (x & y) ^ (x & z) ^ (y & z);
 }
-__local inline uint sig0(uint x)
+inline uint sig0(uint x)
 {
     return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
 }
-__local inline uint sig1(uint x)
+inline uint sig1(uint x)
 {
     return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25);
 }
-__local inline uint ep0(uint x)
+inline uint ep0(uint x)
 {
     return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3);
 }
-__local inline uint ep1(uint x)
+inline uint ep1(uint x)
 {
     return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
 }
 
 
 //Kernel
-__kernel
-void sha256kernel(__global uint* key_length, __global char* key, __global uint* result)
+kernel void sha256single_kernel(uint key_length, __global char* key, __global char* result)
 {
     //Initialize
     int t;
@@ -77,29 +76,31 @@ void sha256kernel(__global uint* key_length, __global char* key, __global uint* 
        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
+    uint uiresult[8];
+    
 
-    length = key_length[0];
+    length = key_length;
     total = length % 64 >= 56 ? 2 : 1 + length / 64;
 
-    result[0] = H0;
-    result[1] = H1;
-    result[2] = H2;
-    result[3] = H3;
-    result[4] = H4;
-    result[5] = H5;
-    result[6] = H6;
-    result[7] = H7;
+    uiresult[0] = H0;
+    uiresult[1] = H1;
+    uiresult[2] = H2;
+    uiresult[3] = H3;
+    uiresult[4] = H4;
+    uiresult[5] = H5;
+    uiresult[6] = H6;
+    uiresult[7] = H7;
 
     for (item = 0; item < total; item++)
     {
-        A = result[0];
-        B = result[1];
-        C = result[2];
-        D = result[3];
-        E = result[4];
-        F = result[5];
-        G = result[6];
-        H = result[7];
+        A = uiresult[0];
+        B = uiresult[1];
+        C = uiresult[2];
+        D = uiresult[3];
+        E = uiresult[4];
+        F = uiresult[5];
+        G = uiresult[6];
+        H = uiresult[7];
 
         #pragma unroll
         for (t = 0; t < 80; t++)
@@ -187,13 +188,29 @@ void sha256kernel(__global uint* key_length, __global char* key, __global uint* 
             A = T1 + T2;
         }
 
-        result[0] += A;
-        result[1] += B;
-        result[2] += C;
-        result[3] += D;
-        result[4] += E;
-        result[5] += F;
-        result[6] += G;
-        result[7] += H;
+        uiresult[0] += A;
+        uiresult[1] += B;
+        uiresult[2] += C;
+        uiresult[3] += D;
+        uiresult[4] += E;
+        uiresult[5] += F;
+        uiresult[6] += G;
+        uiresult[7] += H;
+
+        //Convert uints to hex char array
+        const char hex_charset[] = "0123456789abcdef";
+        #pragma unroll
+        for (int j = 0; j < 8; j++)
+        {
+            uint n = uiresult[j];
+            #pragma unroll
+            for (int len = 8-1; len >= 0; n >>= 4, --len)
+            {
+                result[(j*8) + len] = hex_charset[n & 0xf];
+            }
+        }
+        result[64] = 0;
+
+        //printf("%s\n", result);
     }
 }

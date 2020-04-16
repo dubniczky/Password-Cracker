@@ -20,7 +20,7 @@
 
 #pragma region Misc
 
-std::string oclReadSourcesFromFile( const char *file_name )
+inline std::string oclReadSourcesFromFile( const char *file_name )
 {
 	// Read source file
 	std::ifstream sourceFile(file_name);
@@ -34,7 +34,7 @@ std::string oclReadSourcesFromFile( const char *file_name )
 
 #pragma region Context Utils
 
-bool oclCreateContextByRegex(cl::Context &context, std::regex platform_name = std::regex("nvidia", std::regex_constants::ECMAScript | std::regex_constants::icase), cl_device_type device_type = CL_DEVICE_TYPE_GPU)
+inline bool oclCreateContextByRegex(cl::Context &context, std::regex platform_name = std::regex("nvidia", std::regex_constants::ECMAScript | std::regex_constants::icase), cl_device_type device_type = CL_DEVICE_TYPE_GPU)
 {
 #ifdef __NO_STD_VECTOR
 	cl::vector<cl::Platform> platforms;
@@ -70,7 +70,7 @@ bool oclCreateContextByRegex(cl::Context &context, std::regex platform_name = st
 	return false;
 }
 
-bool oclCreateContextBy(cl::Context &context, std::string platform_name_substring = "", cl_device_type device_type = CL_DEVICE_TYPE_GPU)
+inline bool oclCreateContextBy(cl::Context &context, std::string platform_name_substring = "", cl_device_type device_type = CL_DEVICE_TYPE_GPU)
 {
 	return oclCreateContextByRegex(context, std::regex(platform_name_substring, std::regex_constants::ECMAScript | std::regex_constants::icase), device_type);
 }
@@ -79,12 +79,12 @@ bool oclCreateContextBy(cl::Context &context, std::string platform_name_substrin
 
 #pragma region Alignment Utils
 
-cl_uint oclZeroCopyPtrAlignment (cl::Device device)
+inline cl_uint oclZeroCopyPtrAlignment (cl::Device device)
 {
 	return device.getInfo<CL_DEVICE_MEM_BASE_ADDR_ALIGN>();
 }
 
-cl_uint oclZeroCopySizeAlignment (cl_uint requiredSize, cl::Device device)
+inline cl_uint oclZeroCopySizeAlignment (cl_uint requiredSize, cl::Device device)
 {
 	// The following statement rounds requiredSize up to the next CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE-byte boundary
 	return requiredSize + (~requiredSize + 1) % device.getInfo<CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE>();  
@@ -94,7 +94,7 @@ cl_uint oclZeroCopySizeAlignment (cl_uint requiredSize, cl::Device device)
 
 #pragma region Timing Utils
 
-cl_int oclGetTimeStats(cl_event event, cl_ulong &execStart, cl_ulong &execEnd)
+inline cl_int oclGetTimeStats(cl_event event, cl_ulong &execStart, cl_ulong &execEnd)
 {
 	cl_int err = CL_SUCCESS;
 
@@ -110,7 +110,7 @@ cl_int oclGetTimeStats(cl_event event, cl_ulong &execStart, cl_ulong &execEnd)
 	return err;
 }
 
-cl_int oclPrintTimeStats(cl_event event)
+inline cl_int oclPrintTimeStats(cl_event event)
 {
 	cl_ulong execStart, execEnd;
 	cl_int err = oclGetTimeStats(event, execStart, execEnd);
@@ -122,14 +122,14 @@ cl_int oclPrintTimeStats(cl_event event)
 	return err;
 }
 
-void oclGetTimeStats(cl::Event operation, cl_ulong &device_start, cl_ulong &device_end)
+inline void oclGetTimeStats(cl::Event operation, cl_ulong &device_start, cl_ulong &device_end)
 {
 	operation.wait();
 	operation.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_START, &device_start);
 	operation.getProfilingInfo<cl_ulong>(CL_PROFILING_COMMAND_END, &device_end);
 }
 
-double oclGetTiming(cl::Event operation)
+inline double oclGetTiming(cl::Event operation)
 {
 	cl_ulong device_start, device_end;
 	oclGetTimeStats(operation, device_start, device_end);
@@ -140,7 +140,7 @@ double oclGetTiming(cl::Event operation)
 
 #pragma region String Utils
 
-const char* oclChannelOrderString(cl_channel_order order)
+inline const char* oclChannelOrderString(cl_channel_order order)
 {
 	switch (order)
 	{
@@ -162,7 +162,7 @@ const char* oclChannelOrderString(cl_channel_order order)
 	}
 }
 
-const char* oclChannelTypeString(cl_channel_type type)
+inline const char* oclChannelTypeString(cl_channel_type type)
 {
 	switch (type)
 	{
@@ -186,7 +186,7 @@ const char* oclChannelTypeString(cl_channel_type type)
 	}
 }
 
-const char* oclDeviceTypeString(cl_int devType)
+inline const char* oclDeviceTypeString(cl_int devType)
 {
 	switch (devType)
 	{
@@ -202,7 +202,7 @@ const char* oclDeviceTypeString(cl_int devType)
 
 // Helper function to get OpenCL error string from constant
 // *********************************************************************
-const char* oclErrorString(cl_int error)
+inline const char* oclErrorString(cl_int error)
 {
 	static const char* errorString[] = {
 		"CL_SUCCESS",
@@ -282,7 +282,7 @@ const char* oclErrorString(cl_int error)
 
 #pragma region Error Utils
 
-void oclPrintError(const cl::Error &error)
+inline void oclPrintError(const cl::Error &error)
 {
 	std::cout << error.what() << "(" << error.err() << " == " << oclErrorString(error.err()) << ")" << std::endl;
 }

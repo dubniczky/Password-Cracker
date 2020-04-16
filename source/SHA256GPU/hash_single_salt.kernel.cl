@@ -13,42 +13,42 @@
 #define H7 0x5be0cd19
 
 //Methods
-__local inline uint rotr(uint x, int n)
+inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
 
     //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
-__local inline uint ch(uint x, uint y, uint z)
+inline uint ch(uint x, uint y, uint z)
 {
     return (x & y) ^ (~x & z);
 }
-__local inline uint maj(uint x, uint y, uint z)
+inline uint maj(uint x, uint y, uint z)
 {
     return (x & y) ^ (x & z) ^ (y & z);
 }
-__local inline uint sig0(uint x)
+inline uint sig0(uint x)
 {
     return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
 }
-__local inline uint sig1(uint x)
+inline uint sig1(uint x)
 {
     return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25);
 }
-__local inline uint ep0(uint x)
+inline uint ep0(uint x)
 {
     return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3);
 }
-__local inline uint ep1(uint x)
+inline uint ep1(uint x)
 {
     return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
 }
 
 
 //Kernel
-__kernel
-void sha256kernel_salted(__global uint* salt_length, __global char* salt, __global uint* key_length, __global char* key, __global uint* result)
+kernel
+void sha256salted_kernel(uint salt_length, __global char* salt, uint key_length, __global char* key, __global char* result)
 {
     //Initialize
     int t;

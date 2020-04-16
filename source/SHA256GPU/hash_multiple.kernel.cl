@@ -20,27 +20,27 @@ __local inline uint rotr(uint x, int n)
 
     //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
-__local inline uint ch(uint x, uint y, uint z)
+inline uint ch(uint x, uint y, uint z)
 {
     return (x & y) ^ (~x & z);
 }
-__local inline uint maj(uint x, uint y, uint z)
+inline uint maj(uint x, uint y, uint z)
 {
     return (x & y) ^ (x & z) ^ (y & z);
 }
-__local inline uint sig0(uint x)
+inline uint sig0(uint x)
 {
     return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
 }
-__local inline uint sig1(uint x)
+inline uint sig1(uint x)
 {
     return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25);
 }
-__local inline uint ep0(uint x)
+inline uint ep0(uint x)
 {
     return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3);
 }
-__local inline uint ep1(uint x)
+inline uint ep1(uint x)
 {
     return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
 }
@@ -48,7 +48,7 @@ __local inline uint ep1(uint x)
 
 //Kernel
 __kernel
-void sha256kernel_multiple(__global uint* key_length, __global char* keys, __global uint* results)
+void sha256kernel_salted(__global uint* salt_length, __global char* salt, __global uint* key_length, __global char* key, __global uint* result)
 {
     //Initialize
     int t;
@@ -79,19 +79,20 @@ void sha256kernel_multiple(__global uint* key_length, __global char* keys, __glo
 
 
     //Load properties
-    uint localID = get_local_id(0);
-    __global char* key = keys + localID * key_length[0]; //&keys[localID * key_length];
-    __global uint* result = results + localID * 8;
-
-    length = 0;
-    for (; length < key_length[0] && key[length] != '\0'; length++) { }
+    length = key_length[0] + salt_length[0];    
     total = length % 64 >= 56 ? 2 : 1 + length / 64;
+    for (int i = 0; i < salt_length[0]; i++)
+    {
+        key[key_length[0] + i] = salt[i];
+    }
 
-    //printf("%d\n", key_length[0]);
-    //printf("%d\n", length);
-    //printf("%s\n", key);
-    //printf("%s\n", salt);
-    //printf("%s\n", key);
+    /* DEBUG
+    printf("%d\n", key_length[0]);
+    printf("%d\n", salt_length[0])
+    printf("%s\n", key);
+    printf("%s\n", salt);
+    printf("%s\n", key);
+    */
 
     //Reset algorithm
     result[0] = H0;
@@ -102,6 +103,7 @@ void sha256kernel_multiple(__global uint* key_length, __global char* keys, __glo
     result[5] = H5;
     result[6] = H6;
     result[7] = H7;
+
 
     //Hash
     for (item = 0; item < total; item++)

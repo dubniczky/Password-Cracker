@@ -11,7 +11,6 @@
 #include <chrono>
 
 #include <CL/cl.hpp>
-//#include <utility>
 #include <oclutils.hpp>
 
 using cl::vector;
@@ -21,11 +20,27 @@ using namespace std::chrono;
 class GPUController
 {
 private:
-	static const int HASH_THREAD_COUNT = 256;
-	static const int HASH_RESULT_SIZE = 8;
+	int HASH_THREAD_COUNT = 256;
+	const int HASH_UINT_SIZE = 8 * sizeof(cl_uint);
+	const int HASH_CHAR_SIZE = 65 * sizeof(char);
+
+	cl::vector<Platform> platforms;
+	cl::vector<Device> devices;
+	CommandQueue queue;
+	Context context;
+	Program program;
+	Kernel kernel;
+	int deviceId;
+    
 public:
-	static void platform();
-	static void singleHash(string);
-	static void singleHashSalted(string, string);
-	static void multiHash(string, string);
+	GPUController();
+	GPUController(int);
+
+	void platform();
+	void singleHash(string);
+	void singleHashSalted(string, string);
+	void multiHash(string, string);
+
+private:
+	bool compileKernel(string, string);
 };

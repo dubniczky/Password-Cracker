@@ -9,6 +9,7 @@
 #include <string>
 #include <fstream>
 #include <chrono>
+#include <cstdio>
 
 #include <CL/cl.hpp>
 #include <oclutils.hpp>
@@ -21,7 +22,9 @@ class GPUController
 {
 private:
 	int HASH_THREAD_COUNT = 256;
-	const int HASH_UINT_SIZE = 8 * sizeof(cl_uint);
+	const int MAX_KEY_SIZE = 16;
+	const int HASH_UINT_COUNT = 8;
+	const int HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint);
 	const int HASH_CHAR_SIZE = 65 * sizeof(char);
 
 	cl::vector<Platform> platforms;
@@ -37,10 +40,14 @@ public:
 	GPUController(int);
 
 	void platform();
-	void singleHash(string);
-	void singleHashSalted(string, string);
-	void multiHash(string, string);
+
+	void singleHash(string key);
+	void singleHashSalted(string key, string salt);
+	void multiHash(string sourceFile, string targetFile);
+
+	void crackSingle(string sourceFile, string hash);
 
 private:
 	bool compileKernel(string, string);
+	cl_uint* hexdec(const char* hex);
 };

@@ -65,7 +65,8 @@ void sha256salted_kernel(uint salt_length, __global char* salt, uint key_length,
     uint temp;
     uint A, B, C, D, E, F, G, H;
     uint T1, T2;
-    uint K[64] =
+    uint uiresult[8];
+    const uint K[64] =
     {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -75,47 +76,40 @@ void sha256salted_kernel(uint salt_length, __global char* salt, uint key_length,
        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-    };
+    };    
+    const char hex_charset[] = "0123456789abcdef";
 
 
     //Load properties
-    length = key_length[0] + salt_length[0];    
+    length = key_length + salt_length;    
     total = length % 64 >= 56 ? 2 : 1 + length / 64;
-    for (int i = 0; i < salt_length[0]; i++)
+    for (int i = 0; i < salt_length; i++)
     {
-        key[key_length[0] + i] = salt[i];
+        key[key_length + i] = salt[i];
     }
 
-    /* DEBUG
-    printf("%d\n", key_length[0]);
-    printf("%d\n", salt_length[0])
-    printf("%s\n", key);
-    printf("%s\n", salt);
-    printf("%s\n", key);
-    */
-
     //Reset algorithm
-    result[0] = H0;
-    result[1] = H1;
-    result[2] = H2;
-    result[3] = H3;
-    result[4] = H4;
-    result[5] = H5;
-    result[6] = H6;
-    result[7] = H7;
+    uiresult[0] = H0;
+    uiresult[1] = H1;
+    uiresult[2] = H2;
+    uiresult[3] = H3;
+    uiresult[4] = H4;
+    uiresult[5] = H5;
+    uiresult[6] = H6;
+    uiresult[7] = H7;
 
 
     //Hash
     for (item = 0; item < total; item++)
     {
-        A = result[0];
-        B = result[1];
-        C = result[2];
-        D = result[3];
-        E = result[4];
-        F = result[5];
-        G = result[6];
-        H = result[7];
+        A = uiresult[0];
+        B = uiresult[1];
+        C = uiresult[2];
+        D = uiresult[3];
+        E = uiresult[4];
+        F = uiresult[5];
+        G = uiresult[6];
+        H = uiresult[7];
 
         #pragma unroll
         for (t = 0; t < 80; t++)
@@ -203,19 +197,28 @@ void sha256salted_kernel(uint salt_length, __global char* salt, uint key_length,
             A = T1 + T2;
         }
 
-        result[0] += A;
-        result[1] += B;
-        result[2] += C;
-        result[3] += D;
-        result[4] += E;
-        result[5] += F;
-        result[6] += G;
-        result[7] += H;
+        uiresult[0] += A;
+        uiresult[1] += B;
+        uiresult[2] += C;
+        uiresult[3] += D;
+        uiresult[4] += E;
+        uiresult[5] += F;
+        uiresult[6] += G;
+        uiresult[7] += H;
 
-        /*char* gout = new char[65];
-        for (int i = 0; i < HASH_RESULT_SIZE; i++)
+        //Convert uints to hex char array
+        #pragma unroll
+        for (int j = 0; j < 8; j++)
         {
-            sprintf(gout + i * 8, "%08x", result[i]);
-        }*/
+            uint n = uiresult[j];
+            #pragma unroll
+            for (int len = 8 - 1; len >= 0; n >>= 4, --len)
+            {
+                result[(j * 8) + len] = hex_charset[n & 0xf];
+            }
+        }
+        result[64] = 0;
+
+        //printf("%s\n", result);
     }
 }

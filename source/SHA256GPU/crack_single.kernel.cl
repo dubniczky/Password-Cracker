@@ -12,9 +12,8 @@
 #define H6 0x1f83d9ab
 #define H7 0x5be0cd19
 
-
 //Methods
-inline uint rotr(uint x, int n)
+__local inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
@@ -48,7 +47,7 @@ inline uint ep1(uint x)
 
 
 //Kernel
-kernel void sha256single_kernel(uint key_length, __global char* key, __global char* result)
+kernel void sha256crack_single_kernel(uint key_length, __global char* keys, __global uint* hash, __global char* results)
 {
     //Initialize
     int t;
@@ -66,7 +65,7 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
     uint A, B, C, D, E, F, G, H;
     uint T1, T2;
     uint uiresult[8];
-    const uint K[64] =
+    uint K[64] =
     {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -79,9 +78,24 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
     };
     const char hex_charset[] = "0123456789abcdef";
 
-    length = key_length;
+
+    //Load properties
+    uint globalID = get_global_id(0);
+    __global char* key = keys + globalID * key_length;
+    /*
+    char key[32];
+    for (int j = 0; j < key_length; j++)
+    {
+        key[j] = keys[globalID * key_length + j];
+    }
+    keys[key_length - 1] = 0;
+    */
+
+    for (length = 0; length < key_length && key[length] != 0; length++) {}
     total = length % 64 >= 56 ? 2 : 1 + length / 64;
 
+
+    //Reset algorithm
     uiresult[0] = H0;
     uiresult[1] = H1;
     uiresult[2] = H2;
@@ -91,6 +105,8 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
     uiresult[6] = H6;
     uiresult[7] = H7;
 
+
+    //Hash
     for (item = 0; item < total; item++)
     {
         A = uiresult[0];
@@ -102,7 +118,7 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
         G = uiresult[6];
         H = uiresult[7];
 
-        #pragma unroll
+#pragma unroll
         for (t = 0; t < 80; t++)
         {
             W[t] = 0x00000000;
@@ -124,7 +140,7 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
             stop = i / 4;
             for (t = 0; t < stop; t++)
             {
-                W[t]  = ((uchar)key[msg_pad + t * 4])     << 24;
+                W[t] = ((uchar)key[msg_pad + t * 4]) << 24;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 1]) << 16;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 2]) << 8;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 3]);
@@ -133,23 +149,23 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
             mmod = i % 4;
             if (mmod == 3)
             {
-                W[t]  = ((uchar)key[msg_pad + t * 4])     << 24;
+                W[t] = ((uchar)key[msg_pad + t * 4]) << 24;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 1]) << 16;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 2]) << 8;
                 W[t] |= ((uchar)0x80);
             }
             else if (mmod == 2)
             {
-                W[t]  = ((uchar)key[msg_pad + t * 4])     << 24;
+                W[t] = ((uchar)key[msg_pad + t * 4]) << 24;
                 W[t] |= ((uchar)key[msg_pad + t * 4 + 1]) << 16;
                 W[t] |= 0x8000;
             }
             else if (mmod == 1)
             {
-                W[t]  = ((uchar)key[msg_pad + t * 4]) << 24;
+                W[t] = ((uchar)key[msg_pad + t * 4]) << 24;
                 W[t] |= 0x800000;
             }
-            else 
+            else
             {
                 W[t] = 0x80000000;
             }
@@ -164,7 +180,7 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
             if (length % 64 == 0)
             {
                 W[0] = 0x80000000;
-            }                
+            }
             W[15] = length * 8;
         }
 
@@ -197,30 +213,17 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
         uiresult[6] += G;
         uiresult[7] += H;
 
-        /*
-        printf("%u ", uiresult[0]);
-        printf("%u ", uiresult[1]);
-        printf("%u ", uiresult[2]);
-        printf("%u ", uiresult[3]);
-        printf("%u ", uiresult[4]);
-        printf("%u ", uiresult[5]);
-        printf("%u ", uiresult[6]);
-        printf("%u ", uiresult[7]);
-        */
-
-        //Convert uints to hex char array
-        #pragma unroll
-        for (int j = 0; j < 8; j++)
+        //Verify result
+        if (uiresult[0] == hash[0] && uiresult[1] == hash[1] &&
+            uiresult[2] == hash[2] && uiresult[3] == hash[3] &&
+            uiresult[4] == hash[4] && uiresult[5] == hash[5] &&
+            uiresult[6] == hash[6] && uiresult[7] == hash[7])
         {
-            uint n = uiresult[j];
-            #pragma unroll
-            for (int len = 8-1; len >= 0; n >>= 4, --len)
-            {
-                result[(j*8) + len] = hex_charset[n & 0xf];
-            }
+            results[globalID] = 1;
         }
-        result[64] = 0;
-
-        //printf("%s\n", result);
+        else
+        {
+            results[globalID] = 0;
+        }
     }
 }

@@ -22,7 +22,7 @@ class GPUController
 {
 private:
 	int HASH_THREAD_COUNT = 256;
-	const int MAX_KEY_SIZE = 16;
+	const int MAX_KEY_SIZE = 17; //16
 	const int HASH_UINT_COUNT = 8;
 	const int HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint);
 	const int HASH_CHAR_SIZE = 65 * sizeof(char);
@@ -48,6 +48,6 @@ public:
 	void crackSingle(string sourceFile, string hash);
 
 private:
-	bool compileKernel(string, string);
+	bool compileKernel(string, string, string = "");
 	cl_uint* hexdec(const char* hex);
 };

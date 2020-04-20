@@ -37,36 +37,63 @@ void GPUController::crackSingle(string infileName, string hash)
 		}
 		printf("Kernel compiled.\n");
 
-		//Prepare input
-		printf("Starting crack kernel...\n");
+		//Make GPU buffers
+		printf("Initializing kernel...\n");
 		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * hashThreadCount);
 		Buffer hashBuffer = Buffer(context, CL_MEM_READ_ONLY, MAX_KEY_SIZE * hashThreadCount);
 		Buffer resultBuffer = Buffer(context, CL_MEM_WRITE_ONLY, hashThreadCount);
 
+		//Initialize local variables
 		char* result = new char[hashThreadCount];
-		char* inputBuffer = new char[MAX_KEY_SIZE * hashThreadCount];
-
-		std::ifstream infile(infileName.c_str());
-
+		char* inputBuffer1 = new char[MAX_KEY_SIZE * hashThreadCount];
+		char* inputBuffer2 = new char[MAX_KEY_SIZE * hashThreadCount];
+		char* currentBuffer = inputBuffer1;
 		size_t match = -1;
-		long long lineCount = 0;
+		int lineCount = 0;
+		cl::vector<Event> eventQueue;
+		int i = 0;
+		int previ = 0;
+		char bufferid = 0;
+		bool finished = false;
 
+		//Open file
+		FILE* infile = fopen(infileName.c_str(), "r");
+		if (!infile)
+		{
+			printf("Infile could not be opened.\n");
+		}
+
+		//Upload hash to gpu buffer sync
 		queue.enqueueWriteBuffer(hashBuffer, CL_TRUE, 0, HASH_UINT_SIZE, hashDec);
+
+		//Start timer
 		auto startTime = high_resolution_clock::now();
 
 		printf("Cracking...\n");
-		while (!infile.eof())
+		for (; i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL; i++)
 		{
-			//printf("%d\n", lineCount);
-			std::string line;
-			int i = 0;
-			for (; i < hashThreadCount && std::getline(infile, line); i++)
-			{
-				strcpy(&inputBuffer[MAX_KEY_SIZE * i], line.c_str());
-			}
 			
+		}
+		
+		while (true)
+		{
+			if (finished)
+			{
+				break;
+			}
+
 			// Write data on input buffers!
-			queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, MAX_KEY_SIZE * i, inputBuffer);
+			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, &eventQueue);
+			if (bufferid)
+			{
+				bufferid = false;
+				currentBuffer = inputBuffer1;
+			}
+			else
+			{
+				bufferid = false;
+				currentBuffer = inputBuffer2;
+			}
 
 			// Set arguments to kernel
 			kernel.setArg(0, MAX_KEY_SIZE);
@@ -76,8 +103,20 @@ void GPUController::crackSingle(string infileName, string hash)
 
 			//Run kernel
 			NDRange _global_(i);
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange);
-			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, i, result);
+			lineCount += i;
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &eventQueue[0]);
+			queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, i, result, &eventQueue);
+
+			//Read lines
+			int cline = 0;
+			for (; cline < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * cline], MAX_KEY_SIZE, infile); cline++)
+			{
+
+			}
+   		    if (cline == 0) finished = true;
+
+			//Await kernel
+			eventQueue[0].wait();
 
 			//Verify match
 			for (int j = 0; j < i; j++)
@@ -89,32 +128,46 @@ void GPUController::crackSingle(string infileName, string hash)
 					break;
 				}
 			}
+
+			i = cline;
+
 			if (match != -1)
 			{
 				break;
 			}
-
-			lineCount += i;
 		}
 
 		auto stopTime = high_resolution_clock::now();
 		auto duration = duration_cast<microseconds>(stopTime - startTime);
 
-		infile.close();
+		fclose(infile);
 
 		printf("Crack kernel completed.\n");
 
 		if (match == -1)
 		{
-			printf("===============\nNo match found.\n===============\n");
+			printf("===============\nNo match found.\n");
+
+			printf("Lines verified: %d\n", lineCount);
+
+			printf("===============\n");
 		}
 		else
 		{
 			printf("===============\nMatch found.\n");
 
-			char* res = &inputBuffer[hashThreadCount * MAX_KEY_SIZE];
-			printf("Key: '%s'\n", res);
-			printf("Line: %d\n", match+1);
+			if (bufferid)
+			{
+				char* res = &inputBuffer1[hashThreadCount * MAX_KEY_SIZE];
+				printf("Key: '%s'\n", res);
+			}
+			else
+			{
+				char* res = &inputBuffer2[hashThreadCount * MAX_KEY_SIZE];
+				printf("Key: '%s'\n", res);
+			}		
+			
+			printf("Line: %d\n", lineCount);
 
 			printf("===============\n");
 		}

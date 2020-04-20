@@ -1,3 +1,4 @@
+
 # Password Hash Cracking on GPU
 *by: Richard Nagy, 2020*
 
@@ -26,7 +27,7 @@ In this project I will recreate such a hashing solution from scratch with the SH
 * [Have I been pwned](https://haveibeenpwned.com/Passwords) *common passwords*
 * [Xorbin hash](https://xorbin.com/tools/sha256-hash-calculator) *verify results*
 * [ELTE Computer Graphics](http://cg.elte.hu/index.php/gpgpu/) *custom opencl c++ library*
-* [NVIDIA OpenCL](https://www.nvidia.com/content/cudazone/CUDABrowser/downloads/papers/NVIDIA_OpenCL_BestPracticesGuide.pdf) *best practices guide*
+*  [NVIDIA OpenCL](https://www.nvidia.com/content/cudazone/CUDABrowser/downloads/papers/NVIDIA_OpenCL_BestPracticesGuide.pdf) *best practices guide*
 
 ## Baseline hardware:
 | Component | Baseline |
@@ -297,8 +298,30 @@ Hashing, salting and comparing `100,000` entries took `568,904 microseconds` = `
 |CPU Salted Compare|32.196 khcps|91%|
 |GPU Hash Compare|175.776 khcps|546%|
 
-This means a __5.5 times__ improvement in the first run, so this proves that cracking on GPU is definitely more potent, at least on a computer like mine.
+This means a __~5.5 times__ improvement in the first run, so this proves that cracking on GPU is definitely more potent, at least on a computer like mine.
 
-This version of the program can be accessed with the git key: 
+This version of the program can be accessed with the git commit SHA: `5161a028`
+Or you can download it from the tagged releases page: [Release v1.0](https://gitlab.com/richardnagy/passhash/-/tags/v1.0)
 
 ## **Milestone 6: Optimizing kernel (current)**
+
+### 1. Optimization iteration
+
+| Optimization Attempt | Performance Delta | Conclusion (keep?) |
+| --- | --- | --- |
+| Since we pass only one hash in the entire life of the kernel, I tried adding it using pre-compiler directives. This however did not result in a performance delta above margin of error. | ~ 0% | Revert Changes |
+| While the kernel is running, we can already start reading in the next lines from the file. The reading will take longer than the hashing, but we can get a bit of performance by going asynchronous. This of course requires double buffering, which is a minimal additional memory. | ~ +3% | Keep Changes |
+| A majority of the time is taken up by reading the data. Especially using the slower C++ tools compared to standard C. So I rewrote the reading algorithm and redirected the input into the buffer immediately, skipping the string buffer. | ~ +500% | Keep Changes |
+
+The results from the third step turned out to be a massive improvement. So at this point, we can do our benchmark again.
+
+Hashing, salting and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.568904 = 1,157,085.9946...` => `1,157.085 khcps`. 
+
+|Method|Speed|Relative|
+|---|---|---|
+| CPU Hash Compare | 35.353 khcps | 100% |
+| CPU Salted Compare | 32.196 khcps | 91% |
+| GPU Hash Compare | 175.776 khcps | 546% |
+| GPU Optimization 1 | 1,157.085 khcps | 3273% |
+
+This of course means about **33 times** improvement over standard single CPU core.

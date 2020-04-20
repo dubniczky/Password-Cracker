@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256CPU", "SHA256CPU\SHA2
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256GPU", "SHA256GPU\SHA256GPU.vcxproj", "{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PasswordUtilities", "PasswordUtilities\PasswordUtilities.vcxproj", "{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|x64.Build.0 = Release|x64
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|x86.ActiveCfg = Release|Win32
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|x86.Build.0 = Release|Win32
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Debug|x64.ActiveCfg = Debug|x64
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Debug|x64.Build.0 = Debug|x64
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Debug|x86.ActiveCfg = Debug|Win32
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Debug|x86.Build.0 = Debug|Win32
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Release|x64.ActiveCfg = Release|x64
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Release|x64.Build.0 = Release|x64
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Release|x86.ActiveCfg = Release|Win32
+		{61D23BF2-4D22-491A-B483-9F01A1FB2B2C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

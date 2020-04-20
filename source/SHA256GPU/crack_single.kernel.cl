@@ -13,7 +13,7 @@
 #define H7 0x5be0cd19
 
 //Methods
-__local inline uint rotr(uint x, int n)
+inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
@@ -65,7 +65,7 @@ kernel void sha256crack_single_kernel(uint key_length, __global char* keys, __gl
     uint A, B, C, D, E, F, G, H;
     uint T1, T2;
     uint uiresult[8];
-    uint K[64] =
+    const uint K[64] =
     {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -82,18 +82,21 @@ kernel void sha256crack_single_kernel(uint key_length, __global char* keys, __gl
     //Load properties
     uint globalID = get_global_id(0);
     __global char* key = keys + globalID * key_length;
-    /*
-    char key[32];
-    for (int j = 0; j < key_length; j++)
-    {
-        key[j] = keys[globalID * key_length + j];
-    }
-    keys[key_length - 1] = 0;
-    */
+    //printf("%d %s\n", get_global_id(0), key);
+    
 
-    for (length = 0; length < key_length && key[length] != 0; length++) {}
+    for (length = 0; length < key_length && (key[length] != 0 && key[length] != '\n'); length++) { }
     total = length % 64 >= 56 ? 2 : 1 + length / 64;
 
+    key[length] = 0;
+    //printf("%s ", key);
+
+    if (length == 0)
+    {
+        //printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
+        //    key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15], key[16]);
+    }
+        
 
     //Reset algorithm
     uiresult[0] = H0;

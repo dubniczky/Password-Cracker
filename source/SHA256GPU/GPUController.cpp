@@ -43,7 +43,7 @@ GPUController::GPUController(int deviceId)
 	queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
 }
 
-bool GPUController::compileKernel(string fileName, string kernelName)
+bool GPUController::compileKernel(string fileName, string kernelName, string params)
 {
 	try
 	{
@@ -52,7 +52,7 @@ bool GPUController::compileKernel(string fileName, string kernelName)
 			(std::istreambuf_iterator<char>()));
 		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 		program = Program(context, source);
-		program.build(devices);
+		program.build(devices, params.c_str());
 		kernel = Kernel(program, kernelName.c_str());
 		return true;
 	}

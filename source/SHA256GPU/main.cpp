@@ -17,6 +17,8 @@ crack single ../../passwords/passwords-4m.txt 15062cd57ae7b7eaf0aa3262fb44428a13
 
 --4m last match
 crack single ../../passwords/passwords-4m.txt 59557cf1890bf0b7458c1e66119ab01c3a796fd09df296ef7e70745d29934777
+--100k last match
+crack single ../../passwords/passwords-100k.txt c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35
 */
 #include "GPUController.hpp"
 
@@ -27,10 +29,11 @@ int main(int argc, char* argv[])
 	//No arguments
 	if (argc < 2)
 	{
-		printf("platform                               : list platforms\n");
-		printf("hash single <password>                 : hash a single password\n");
-		printf("hash single <password> <salt>          : hash a single password with salt\n");
-		printf("hash multiple <input.txt> <output.txt> : hash multiple passwords\n");
+		printf("platform                                    : list platforms\n");
+		printf("hash single <password>                      : hash a single password\n");
+		printf("hash single <password> <salt>               : hash a single password with salt\n");
+		printf("hash multiple <dictionary.txt> <output.txt> : hash multiple passwords\n");
+		printf("crack single <dictionary.txt> <hash>        : hash multiple passwords\n");
 		return 0;
 	}
 
@@ -106,7 +109,7 @@ int main(int argc, char* argv[])
 		{
 			if (argc < 5)
 			{
-				printf("<crack-table.txt> <hash>\n");
+				printf("<dictionary.txt> <hash>\n");
 				return 0;
 			}
 

@@ -1,27 +1,31 @@
 #include "GPUController.hpp"
 
-void GPUController::crackSingle(string infileName, string hash)
+void GPUController::crackSingleSalted(string infileName, string hash)
 {
-	if (hash.length() > 64)
-	{
-		crackSingleSalted(infileName, hash);
-		return;
-	}
-
 	//Write hash
-	const char* hashc = hash.c_str();
-	printf("Hash: %s\n", hashc);
+	printf("Input: %s\n", hash.c_str());
+
+	//Calc salt
+	int saltLength = hash.length() - 64;
+	printf("Salt length: %d\n", saltLength);
+	char* salt = new char[saltLength + 1];
+	memcpy(salt, hash.c_str(), saltLength);
+	salt[saltLength] = 0;
+	printf("Salt: %s\n", salt);
+
+	char hashc[65];
+	memcpy(hashc, hash.c_str() + saltLength, 65);
 
 	//Write hexform
-	#pragma unroll
 	printf("Hash hexform: [ ");
+	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT; i++)
 	{
-		printf("'%.8s', ", &hashc[i*8]);
+		printf("'%.8s', ", &hashc[i * 8]);
 		if (i == HASH_UINT_COUNT - 1) printf("'%.8s' ", &hashc[i * 8]);
 	}
 	printf("]\n");
-	
+
 	//Write Decform
 	cl_uint* hashDec = hexdec(hashc);
 	printf("Hash decform: [ ");
@@ -33,11 +37,18 @@ void GPUController::crackSingle(string infileName, string hash)
 	}
 	printf("]\n");
 
+	char preproc[512];
+	sprintf(preproc,
+		    "-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u \
+             -D KEY_LENGTH=%d -D SALT_LENGTH=%d -D SALT_STRING=\"%s\"",
+		    hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7],
+			MAX_KEY_SIZE, saltLength, salt);
+
 	int hashThreadCount = HASH_THREAD_COUNT;
 	try
 	{
 		printf("Compiling kernel...\n");
-		if (!compileKernel("crack_single.kernel.cl", "sha256crack_single_kernel"))
+		if (!compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", preproc))
 		{
 			return;
 		}
@@ -46,7 +57,6 @@ void GPUController::crackSingle(string infileName, string hash)
 		//Make GPU buffers
 		printf("Initializing kernel...\n");
 		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * hashThreadCount);
-		Buffer hashBuffer = Buffer(context, CL_MEM_READ_ONLY, MAX_KEY_SIZE * hashThreadCount);
 		Buffer resultBuffer = Buffer(context, CL_MEM_WRITE_ONLY, hashThreadCount);
 
 		//Initialize local variables
@@ -69,18 +79,15 @@ void GPUController::crackSingle(string infileName, string hash)
 			printf("Infile could not be opened.\n");
 		}
 
-		//Upload hash to gpu buffer sync
-		queue.enqueueWriteBuffer(hashBuffer, CL_TRUE, 0, HASH_UINT_SIZE, hashDec);
-
 		//Start timer
 		auto startTime = high_resolution_clock::now();
 
 		printf("Cracking...\n");
 		for (; i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL; i++)
 		{
-			
+
 		}
-		
+
 		while (true)
 		{
 			if (finished)
@@ -97,20 +104,18 @@ void GPUController::crackSingle(string infileName, string hash)
 			}
 			else
 			{
-				bufferid = false;
+				bufferid = true;
 				currentBuffer = inputBuffer2;
 			}
 
 			// Set arguments to kernel
-			kernel.setArg(0, MAX_KEY_SIZE);
-			kernel.setArg(1, keyBuffer);
-			kernel.setArg(2, hashBuffer);
-			kernel.setArg(3, resultBuffer);
+			kernel.setArg(0, keyBuffer);
+			kernel.setArg(1, resultBuffer);
 
 			//Run kernel
-			NDRange _global_(i);
+			NDRange globalRange(i);
 			lineCount += i;
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &eventQueue[0]);
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, globalRange, cl::NullRange, NULL, &eventQueue[0]);
 			queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, i, result, &eventQueue);
 
 			//Read lines
@@ -119,7 +124,7 @@ void GPUController::crackSingle(string infileName, string hash)
 			{
 
 			}
-   		    if (cline == 0) finished = true;
+			if (cline == 0) finished = true;
 
 			//Await kernel
 			eventQueue[0].wait();
@@ -171,20 +176,20 @@ void GPUController::crackSingle(string infileName, string hash)
 			{
 				char* res = &inputBuffer2[hashThreadCount * MAX_KEY_SIZE];
 				printf("Key: '%s'\n", res);
-			}		
-			
+			}
+
 			printf("Line: %d\n", lineCount);
 
 			printf("===============\n");
 		}
-		
+
 		long micro = (long)duration.count();
 		printf("Runtime: %lu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
 		delete[] result;
 		delete[] hashDec;
-		//delete[] inputBuffer;
+		delete[] salt;
 	}
 	catch (Error error)
 	{

@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="crackSingle.cpp" />
+    <ClCompile Include="crackSingleSalted.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="GPUController.cpp" />
     <ClCompile Include="multiHash.cpp" />
@@ -160,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="crack_single.kernel.cl" />
+    <None Include="crack_single_salted.kernel.cl" />
     <None Include="hash_multiple.kernel.cl" />
     <None Include="hash_single.kernel.cl" />
     <None Include="hash_single_salt.kernel.cl" />

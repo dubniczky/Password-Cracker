@@ -17,17 +17,20 @@ In this project I will recreate such a hashing solution from scratch with the SH
 3. Implementing salt into the algorithm
 4. Implementing the algorithm on GPU in OpenCL
 5. Implementing hash compare on GPU
-6. **Optimizing Kernel (current)**
+6. Optimizing Kernel Iteration 1
+7. Implementing salt compare on GPU
+8. **Optimizing Kernel Iteration 2 (current)**
 
 
 ## Resources:
 * [Wikipedia: SHA-2](https://en.wikipedia.org/wiki/SHA-2) *algorithm*
-* [Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64) *data storage type*
+* [Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64) *storing in uints*
 * [Wikipedia: Salt (Crypgoraphy)](https://en.wikipedia.org/wiki/Salt_(cryptography)) *salt*
-* [Have I been pwned](https://haveibeenpwned.com/Passwords) *common passwords*
+* [Have I been pwned](https://haveibeenpwned.com/Passwords) *common password lists*
 * [Xorbin hash](https://xorbin.com/tools/sha256-hash-calculator) *verify results*
 * [ELTE Computer Graphics](http://cg.elte.hu/index.php/gpgpu/) *custom opencl c++ library*
 *  [NVIDIA OpenCL](https://www.nvidia.com/content/cudazone/CUDABrowser/downloads/papers/NVIDIA_OpenCL_BestPracticesGuide.pdf) *best practices guide*
+* [Radeon GPU Analyzer](https://gpuopen.com/gaming-product/radeon-gpu-analyzer-rga/) kernel disassemble for optimizing
 
 ## Baseline hardware:
 | Component | Baseline |
@@ -146,7 +149,7 @@ Checked lines: 100000
 Search time: 3106065 microseconds
 ```
 So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds` = `3.106065 seconds`.
-`100,000/3.106065 = 32,195.0764...` => `32.196 khcps`. This method seems about `9%` slower, but keep in mind that it will depend on the size of the salt. That however is almost never bigger than 16 bytes.
+`100,000/3.106065 = 32,195.0764...` => `~32.196 khcps`. This method seems about `9%` slower, but keep in mind that it will depend on the size of the salt. That however is almost never bigger than 16 bytes.
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -290,7 +293,7 @@ kernel void sha256crack_single_kernel(uint key_length,
 
 In this case however, we pre-calculate the hash in __unsigned integer__ form once on the cpu, so conversion on gpu every time is unnecessary. We save about 3 microseconds per hash.
 
-Hashing, salting and comparing `100,000` entries took `568,904 microseconds` = `0.568904 seconds`. `100,000/0.568904 = 175,776.5809...` => `175.776 khcps`. We can have our first real comparison with the CPU.
+Hashing and comparing `100,000` entries took `568,904 microseconds` = `0.568904 seconds`. `100,000/0.568904 = 175,776.5809...` => `~175.776 khcps`. We can have our first real comparison with the CPU.
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -303,19 +306,107 @@ This means a __~5.5 times__ improvement in the first run, so this proves that cr
 This version of the program can be accessed with the git commit SHA: `5161a028`
 Or you can download it from the tagged releases page: [Release v1.0](https://gitlab.com/richardnagy/passhash/-/tags/v1.0)
 
-## **Milestone 6: Optimizing kernel (current)**
+## Milestone 6: Optimizing Kernel Iteration 1
 
-### 1. Optimization iteration
+### Summary
 
-| Optimization Attempt | Performance Delta | Conclusion (keep?) |
-| --- | --- | --- |
-| Since we pass only one hash in the entire life of the kernel, I tried adding it using pre-compiler directives. This however did not result in a performance delta above margin of error. | ~ 0% | Revert Changes |
-| While the kernel is running, we can already start reading in the next lines from the file. The reading will take longer than the hashing, but we can get a bit of performance by going asynchronous. This of course requires double buffering, which is a minimal additional memory. | ~ +3% | Keep Changes |
-| A majority of the time is taken up by reading the data. Especially using the slower C++ tools compared to standard C. So I rewrote the reading algorithm and redirected the input into the buffer immediately, skipping the string buffer. | ~ +500% | Keep Changes |
+| No. | Optimization Attempt | Performance Delta | Conclusion (keep?) |
+| --- | --- | --- | --- |
+| 1 | Since we pass only one hash in the entire life of the kernel, I tried adding it using pre-compiler directives. This however did not result in a performance delta above margin of error. | ~ 0% | Revert Changes |
+| 2 | While the kernel is running, we can already start reading in the next lines from the file. The reading will take longer than the hashing, but we can get a bit of performance by going asynchronous. This of course requires double buffering, which is a minimal additional memory. | ~ +6% | Keep Changes |
+| 3 | A majority of the time is taken up by reading the data. Especially using the slower C++ tools compared to standard C. So I rewrote the reading algorithm and redirected the input into the buffer immediately, skipping the string buffer. | ~ +500% | Keep Changes |
 
-The results from the third step turned out to be a massive improvement. So at this point, we can do our benchmark again.
+### Details
 
-Hashing, salting and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.568904 = 1,157,085.9946...` => `1,157.085 khcps`. 
+#### 1. Attempt: *preprocessor hash*
+
+Instead of passing in the hash as a **global** buffer, I did it with macros. The compiler seemingly optimizes single bulk read from global buffer well, so this did not improve performance above margin of error. 
+
+Chances have been reverted, however the scaffolding for passing in build options for the compiler remained.
+
+#### 2. Attempt: *implementing kernel events*
+
+The kernel events have been synchronous so far, which is a waste of a small amount of time. To combat this, I implemented a double-buffering-like method, which works the following way:
+
+1. Read the first segment file into the first buffer.
+2. Copy first buffer to gpu and start hashing async.
+3. Read next segment of the file into second buffer.
+4. Wait for kernel to be completed (*it almost always already is at this point*)
+5. Check result from kernel.
+6. Copy second buffer to gpu and start hashing async.
+7. Read next segment of the file into second buffer.
+8. ...
+
+This works by having 2 key buffers and switching a pointer between them. This of course means we need more RAM, but that is less of a constraint in this case, since if we crack `256 keys` at once, we will need `256*17 = 4357 byes = 4.25 Kb` extra memory.
+
+```cpp
+//Event logic
+cl::vector<Event> eventQueue;
+
+//... Read buffer
+
+queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0,
+                         MAX_KEY_SIZE * keyCount, currentBuffer,
+                         &eventQueue);
+queue.enqueueNDRangeKernel(kernel, cl::NullRange,
+                           globalRange, cl::NullRange,
+                           NULL, &eventQueue[0]);
+queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0,
+                        keyCount, result, &eventQueue);
+
+//... Switch then read next buffer
+
+eventQueue[0].wait();
+                        
+//... Validate result
+```
+
+#### 3. Attempt: *file read optimization*
+
+Currently we waste a lot of time by using the **C++ iostream**, since it wants to work with **std::string**s and it makes copying to our buffer really slow.
+
+1. It copies the data from **std::ifstream** to **std::stringstream**
+2. It converts the data from **std::stringstream** to **std::string**
+3. It then returns the data to me and I convert the string to **const char[]**
+4. As the last step I copy the items from the arra to the buffer.
+
+```cpp
+std::ifstream infile(fileName);
+
+// ...
+
+std::string line;
+for (int i = 0; i < hashThreadCount && std::getline(infile, line); i++)
+{
+    strcpy(&inputBuffer[MAX_KEY_SIZE * i], line.c_str());
+}
+
+// ...
+
+infile.close();
+```
+
+I rewrote this using a standard C approach:
+```c
+FILE* infile = fopen(fileName, "r");
+
+// ...
+
+for (int i = 0;
+     i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL;
+     i++)
+     { }
+
+// ...
+
+fclose(infile);
+```
+
+This looks very similar, but it actually only makes one simple step. Starts reading the file until a `\n` character into the buffer itself. It does not even remove the end-line character form the key, but we will do that in the kernel. It's faster that way.
+
+The results from this step turned out to be a massive improvement. So at this point, we can do our benchmark again.
+
+Hashing and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.086424 = 1,157,085.9946...` => `~1,157.085 khcps`. 
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -324,4 +415,98 @@ Hashing, salting and comparing `100,000` entries took `86,424 microseconds` = `0
 | GPU Hash Compare | 175.776 khcps | 546% |
 | GPU Optimization 1 | 1,157.085 khcps | 3273% |
 
-This of course means about **33 times** improvement over standard single CPU core.
+This of course means about **33 times** improvement over standard single CPU core. I'm using an SSD to store the password dictionary. This would be significantly lower if I used a HDD instead.
+
+Also keep in mind, that the preparation to start the hashing is longer in case of the GPU kernel. This is not included into the hash speed, since it is only done once in the beginning and it get insignificant in the case of bigger datasets, which this program is designed for.
+
+## **Milestone 7: Implementing salt compare on GPU (current)**
+
+At this point we have quite a few variables that are constant during the whole life of the kernel:
+- Hash
+- Salt length
+- Key length
+- Salt
+
+We can define these with the pre-compiler, to save the time of having to make buffers and pass them as parameters. We use the **uint array** version of the hash to spare a while set of computations.
+
+```opencl
+#DEFINE HASH_0 ...
+#DEFINE HASH_1 ...
+#DEFINE HASH_2 ...
+#DEFINE HASH_3 ...
+#DEFINE HASH_4 ...
+#DEFINE HASH_5 ...
+#DEFINE HASH_6 ...
+#DEFINE HASH_7 ...
+#DEFINE SALT_LENGTH ...
+#DEFINE SALT_STRING ...
+#DEFINE KEY_LENGTH ...
+```
+
+The problem is that we don't actually know these in the kernel, so we have to add them as parameters for the compiler.
+
+```c
+sprintf(buildOptions,
+		"-D HASH_0=%u -D HASH_1=%u \
+	 	 -D HASH_2=%u -D HASH_3=%u \
+		 -D HASH_4=%u -D HASH_5=%u \
+		 -D HASH_6=%u -D HASH_7=%u \
+         -D KEY_LENGTH=%d \
+         -D SALT_LENGTH=%d \
+         -D SALT_STRING=\"%s\"",
+		 hashDec[0], hashDec[1],
+		 hashDec[2], hashDec[3],
+		 hashDec[4], hashDec[5],
+		 hashDec[6], hashDec[7],
+		 MAX_KEY_SIZE, saltLength, salt);
+```
+
+This still has one problem. You can't actually pass a string as a macro, so I had to convert it with the preprocessor of the kernel.
+
+```opencl
+//Helper methods
+#define STR(s) #s      //Takes macro and returns it as a string
+#define XSTR(s) STR(s) //Takes macro and passes its value to be stringified
+
+//Usage:
+char salt[] = XSTR(SALT_STRING); //Returns the value SALT_STRING as a string
+```
+
+This way we can achieve just a tiny overhead when using salts in the gpu, since we only need to append the macro string. Also we know it's length to be a constant, so we can **unroll** the cycle.
+
+```opencl
+#pragma unroll
+for (unsigned int j = 0; j < SALT_LENGTH; j++)
+{
+    key[length + j] = XSTR(SALT_STRING)[j];
+}
+length += SALT_LENGTH;
+```
+
+As you can see, if we disassemble this, the code is entirely gone. This is because the kernel will do this in one memory copy step when it is reserving the stack for the method. This makes it slower so insignificantly I can't measure it above the margin of error.
+
+```assembly
+s_load_dwordx2          s[0:1], s[4:5], 0x8             Varies
+v_mov_b32_e32           v0, 0x64636261                  Varies
+v_mov_b32_e32           v1, 0x68676665                  Varies
+s_waitcnt               lgkmcnt(0)                      Varies
+v_mov_b32_e32           v3, s1                          Varies
+v_mov_b32_e32           v2, s0                          Varies
+s_endpgm                                                1
+```
+
+One thing that makes is slower however, is having to copy the key string as well. Also longer key means more steps during hashing, so we get some performance penalty here.
+
+Hashing, salting and comparing `100,000` entries took `88,469 microseconds` = `0.088469 seconds`. `100,000/0.088469 = 1,130,339.4409...` => `~1,130.339 khcps`. 
+
+Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance if we are using a salt.
+
+|Method|Speed|Relative|
+|---|---|---|
+| CPU Hash Compare | 35.353 khcps | 100% |
+| CPU Salted Compare | 32.196 khcps | 91% |
+| GPU Hash Compare | 175.776 khcps | 546% |
+| GPU Optimization 1 | 1,157.085 khcps | 3273% |
+| GPU Salted Compare | 1,130.339 khcps | 3197% |
+
+## **Milestone 8: Optimizing Kernel Iteration 2 (current)**

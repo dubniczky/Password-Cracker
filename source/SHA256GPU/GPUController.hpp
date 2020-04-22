@@ -46,8 +46,9 @@ public:
 	void multiHash(string sourceFile, string targetFile);
 
 	void crackSingle(string sourceFile, string hash);
+	void crackSingleSalted(string sourceFile, string hash);
 
 private:
-	bool compileKernel(string, string, string = "");
+	bool compileKernel(string, string, std::string = "");
 	cl_uint* hexdec(const char* hex);
 };

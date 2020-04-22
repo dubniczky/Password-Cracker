@@ -28,6 +28,9 @@
     <ClCompile Include="crackSingle.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
+    <ClCompile Include="crackSingleSalted.cpp">
+      <Filter>GPUController</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="hash_multiple.kernel.cl">
@@ -40,6 +43,9 @@
       <Filter>Kernels</Filter>
     </None>
     <None Include="crack_single.kernel.cl">
+      <Filter>Kernels</Filter>
+    </None>
+    <None Include="crack_single_salted.kernel.cl">
       <Filter>Kernels</Filter>
     </None>
   </ItemGroup>

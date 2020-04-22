@@ -52,7 +52,8 @@ Being a scalar unit, we can even use prefix multipliers:
 `1,000,000,000 hcps` = `1,000,000 khcps` = `1,000 mhcps` = `1 ghcps`
 
 ## Milestone 1: implementing on CPU *(completed)*
-Implementing the SHA-256 encryption algorithm on the CPU using exclusively C syntax for easier port on GPU. It must be capable of receieving a standard c string as input, and generate a 256 bit hash as an output. This means an **n** byte input and a ``256 bit = 32 byte = 64 character`` long __base64__ string as output.
+
+Implementing the **SHA-256** encryption algorithm on the CPU using exclusively C syntax for easier port on GPU. It must be capable of receiving a standard C string as input, and generate a 256 bit hash as an output. This means an **n** byte input and a ``256 bit = 32 byte = 64 character base64`` string as output.
 
 We have to generate an entirely new stack of variables for each hash, because the values get moved and modified every iteration. I used an object-orinted approach in the first iteration.
 
@@ -62,8 +63,53 @@ const char* hash = sha256("mypassword");
 ```
 This of course is going to change later, but it helped isolate the variables and code needed exclusively for the hasing algorithm.
 
+I will use the standard way of using this algorithm:
+
+1. Initializing the SHA256 context (*init*)
+2. Padding the key to be **n * 2<sup>64</sup>** (*update*)
+3. Transforming the blocks (*transform*)
+4. Unpacking the digest (*final*)
+
+```c
+//Methods
+init();
+update(const unsigned char* message, unsigned int length);
+transform(const unsigned char* message, unsigned int block);
+final(unsigned char* digest);
+
+//Printing the answer
+char buf[2 * DIGEST_SIZE + 1];
+for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
+{
+    sprintf(buf + i * 2, "%02x", digest[i]);
+}
+buf[2 * DIGEST_SIZE] = 0;
+```
+
+We get the answer in a fixed 8 length **unsigned int** block array, which we convert to hexadecimal string using sprintf.
+
+The definition for the 256 bit context is going to be 8x32 bit integers corresponding to the 32 bits of the fractional parts of the square roots of the first eight prime numbers, which is coincidentally the **base64** form of: `Rosetta Code`
+
+||H0|H1|H2|H3|H4|H5|H6|H7|
+|---|---|---|---|---|---|---|---|---|
+|0x|6a09e667|bb67ae85|3c6ef372|a54ff53a|510e527f|9b05688c|1f83d9ab|5be0cd19|
+
+Which gets folded into:  
+`764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF` 
+This will serve as our starting point to the algorithm.
+
+These values can be easily calculated with the following **javascript** code by just pasting it into the console:
+
+```c
+(() => {
+[2,3,5,7,11,13,17,19].forEach((i) => 
+	console.log(parseInt((Math.sqrt(i) % 1).toString(2).slice(2, 34), 2).toString(16)))
+})()
+```
+
 
 ## Milestone 2: Cracking using password-table *(completed)*
+
 With the algorithm working, we can start implementing the actual cracking. We read one file, with an unknown hash
 
 *target.txt:* ``b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e``
@@ -78,7 +124,7 @@ There are 3 main sample files in the project:
 |---|---|
 |100|[passwords-100.txt](https://gitlab.com/ivolv/passhash/-/blob/master/passwords/passwords-100.txt)|
 |100,000|[passwords-100k.txt](https://gitlab.com/ivolv/passhash/-/blob/master/passwords/passwords-100k.txt)|
-|4,000,000|[passwords-4m.txt](https://gitlab.com/ivolv/passhash/-/blob/master/passwords/passwords-4m.txt)|
+|3,721,224|[passwords-4m.txt](https://gitlab.com/ivolv/passhash/-/blob/master/passwords/passwords-4m.txt)|
 
 The code can be compiled and run in the following way:
 ```bash
@@ -106,7 +152,7 @@ So hashing and comparing ``100,000`` entries took ``2,828,609 microseconds`` = `
 
 ## Milestone 3: Implementing salt *(completed)*
 
-The current method of cracking seems unnecessary, since we could just pre-calculate the hashes and start comparing every time, without needing to do the hashing every time.
+The current method of cracking seems unnecessary, since we could just pre-calculate the hashes and start comparing every time without needing to do the hashing every time.
 
 This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for __banana__ with 4 byte salts:  
 
@@ -116,6 +162,7 @@ This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commo
 The same password can take up multiple forms, thus making so that if a hash is cracked, we are still unable to match every single instance of the same password. This is why it is **essential** that salts remain unique in every set of passwords, for example in a login database. This way no passwords can be equated just by looking at their hashed forms.
 
 Now however, we will need the salt to store the password as well, so we are just going to append it to the start of the hash:  
+
 `kQ9wvI9A` `50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee`  
 `kQ9wvI9A50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee`  
 
@@ -158,14 +205,14 @@ So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds
 
 
 ## Milestone 4: Implementing SHA-256 on GPU *(completed)*
-In this step, the most difficult part is of course writing the kernel itself. It has to be able to calculate a single hash given a string and its length. I decided against doing string operations on the GPU too much, so the result is going to be an **unsigned int** array. The result length is fixed, so there will be no problems with that.
+In this step, the most difficult part is of course writing the kernel itself. It has to be able to calculate a single hash given a string and its length. The result length is fixed, so there will be no problems with that.
 
 Kernel definition: 
 ```opencl
 //hash_single.kernel.cl
 kernel void sha256single_kernel(uint key_length,
-                                __global char* key,
-                                __global uint* result)
+                                global char* key,
+                                global uint* result)
 ```
 We can then feed the information using global memory buffers. Previously we defined some macros to speed up the code, which is not going to be necessary in this case, since the compiler merges every **inline** method into the kernel.
 
@@ -201,7 +248,7 @@ inline uint sig0(uint x)
 ```
 Then inserted into the kernel calls as:
 ```opencl
-( ((x>>2)|(x<<(30)))^((x>>13)|(x<<(19)))^((x>>22)|(x<<(10))) )
+( ((x>>2)|(x<<30))^((x>>13)|(x<<19))^((x>>22)|(x<<10)) )
 ```
 
 So we are doing this for every single method.
@@ -214,28 +261,19 @@ inline uint sig1(uint x)
 inline uint ep0(uint x)
 inline uint ep1(uint x)
 ```
-But the definition for the 256bit context is still going to be done using the preprocessor with 8 32bit integers corresponding to the **Rosetta Code**
 
-|H0|H1|H2|H3|H4|H5|H6|H7|
-|---|---|---|---|---|---|---|---|
-|0x6a09e667|0xbb67ae85|0x3c6ef372|0xa54ff53a|0x510e527f|0x9b05688c|0x1f83d9ab|0x5be0cd19|
-
-Which gets folded into:  
-`764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF` 
-This will serve as our starting point to the algorithm.
-
-After implementing the standard hashing, we will add salt as well. Appending the salt to the end of the password ought to be done on the GPU itself. This way the process will be parallel and less data will be copied between hardware. New kernel:
+After implementing the standard hashing, we will add salt as well. Appending the salt to the end of the password ought to be done on the GPU itself. This way the process will be parallel and less data will be copied between hardware. The new kernel:
 
 ```opencl
 //hash_single_salt.kernel.cl
 kernel void sha256kernel_salted(uint salt_length,
-                                __global char* salt,
+                                global char* salt,
                                 uint key_length,
-                                __global char* key,
-                                __global uint* result)
+                                global char* key,
+                                global uint* result)
 ```
 
-Also a useful feature would be to feed in a file of keys to the gpu, which hashes them, then we write them to a file. To do this effectively, we should convert the __unsigned integer__ keys to __hex strings__. Since I cannot use sprintf, I had to implement a lightweight way of converting on the gpu. This became the end result:
+Also a useful feature would be to feed in a file of keys to the gpu, which hashes them, then we write them to a file. To do this effectively, we should convert the __unsigned integer__ keys to __hex strings__. Since I cannot use sprintf as I did in C, I had to implement a lightweight way of converting on the gpu. This became the end result:
 
 ```opencl
 const char hex_charset[] = "0123456789abcdef";   
@@ -255,7 +293,7 @@ result[64] = 0;
 As you can see, we **unroll** every cycle to keep the instruction flow constant. We push the unsigned integer bistream by 4 bits every time, since every 4 bits represent a single hex character.
 For example:
 
-`0110 1010 0000 1001 1110 0110 0110 0111` -> __0x6a09e667__
+0x6a09e667 = `0110 1010 0000 1001 1110 0110 0110 0111`
 
 |6|A|0|9|E|6|6|7|
 |---|---|---|---|---|---|---|---|
@@ -276,19 +314,19 @@ We now have an increasing amount of features, so I separated them into their own
 gpu platform
 gpu hash single <key>
 gpu hash single <key> <salt>
-gpu hash multiple <infile> <outfil>
+gpu hash multiple <infile> <outfile>
 ```
 
-## Milestone 5: Implementing hash compare on GPU (current)*
+## Milestone 5: Implementing hash compare on GPU *(completed)*
 
 Comparing is going to be similar to the multi hash. For optimization purposes I specified a 16 character maximum length limit for the input keys. The vast majority of passwords are less than that, and it is even used as a hard upper limit on numerous websites.
 
 ```opencl
 //crack_single.kernel.cl
 kernel void sha256crack_single_kernel(uint key_length,
-                                      __global char* keys,
-                                      __global uint* hash,
-                                      __global char* results)
+                                      global char* keys,
+                                      global uint* hash,
+                                      global char* results)
 ```
 
 In this case however, we pre-calculate the hash in __unsigned integer__ form once on the cpu, so conversion on gpu every time is unnecessary. We save about 3 microseconds per hash.
@@ -306,7 +344,7 @@ This means a __~5.5 times__ improvement in the first run, so this proves that cr
 This version of the program can be accessed with the git commit SHA: `5161a028`
 Or you can download it from the tagged releases page: [Release v1.0](https://gitlab.com/richardnagy/passhash/-/tags/v1.0)
 
-## Milestone 6: Optimizing Kernel Iteration 1
+## Milestone 6: Optimizing Kernel Iteration 1 *(completed)*
 
 ### Summary
 
@@ -326,7 +364,7 @@ Chances have been reverted, however the scaffolding for passing in build options
 
 #### 2. Attempt: *implementing kernel events*
 
-The kernel events have been synchronous so far, which is a waste of a small amount of time. To combat this, I implemented a double-buffering-like method, which works the following way:
+The kernel events have been synchronous so far, which is a waste of a small amount of time. To combat this, I implemented a **double-buffering**-like workflow, which works the following way:
 
 1. Read the first segment file into the first buffer.
 2. Copy first buffer to gpu and start hashing async.
@@ -337,13 +375,13 @@ The kernel events have been synchronous so far, which is a waste of a small amou
 7. Read next segment of the file into second buffer.
 8. ...
 
-This works by having 2 key buffers and switching a pointer between them. This of course means we need more RAM, but that is less of a constraint in this case, since if we crack `256 keys` at once, we will need `256*17 = 4357 byes = 4.25 Kb` extra memory.
+This works by having 2 key buffers and switching a pointer between them. This of course means we need more RAM, but that is less of a constraint in this case, since if we crack `256 keys` with a maximum length of `16` at once, we will need `256*(16+1) = 4357 byes = 4.25 Kb` extra memory.
 
 ```cpp
 //Event logic
 cl::vector<Event> eventQueue;
 
-//... Read buffer
+// ... Read buffer (*)
 
 queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0,
                          MAX_KEY_SIZE * keyCount, currentBuffer,
@@ -354,16 +392,17 @@ queue.enqueueNDRangeKernel(kernel, cl::NullRange,
 queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0,
                         keyCount, result, &eventQueue);
 
-//... Switch then read next buffer
+// ... Switch then read next buffer
 
 eventQueue[0].wait();
                         
-//... Validate result
+// ... Validate result
+//Back to (*) until end of file, or found result
 ```
 
 #### 3. Attempt: *file read optimization*
 
-Currently we waste a lot of time by using the **C++ iostream**, since it wants to work with **std::string**s and it makes copying to our buffer really slow.
+Currently we waste a lot of time by using **C++ iostream**, since it works with **std::string**s and it makes copying to our buffer really slow. Here are the steps we do with it:
 
 1. It copies the data from **std::ifstream** to **std::stringstream**
 2. It converts the data from **std::stringstream** to **std::string**
@@ -387,6 +426,7 @@ infile.close();
 ```
 
 I rewrote this using a standard C approach:
+
 ```c
 FILE* infile = fopen(fileName, "r");
 
@@ -404,7 +444,7 @@ fclose(infile);
 
 This looks very similar, but it actually only makes one simple step. Starts reading the file until a `\n` character into the buffer itself. It does not even remove the end-line character form the key, but we will do that in the kernel. It's faster that way.
 
-The results from this step turned out to be a massive improvement. So at this point, we can do our benchmark again.
+The results from this step turned out to be a massive improvement. So at this point, we should do our benchmark again.
 
 Hashing and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.086424 = 1,157,085.9946...` => `~1,157.085 khcps`. 
 
@@ -415,11 +455,11 @@ Hashing and comparing `100,000` entries took `86,424 microseconds` = `0.086424 s
 | GPU Hash Compare | 175.776 khcps | 546% |
 | GPU Optimization 1 | 1,157.085 khcps | 3273% |
 
-This of course means about **33 times** improvement over standard single CPU core. I'm using an SSD to store the password dictionary. This would be significantly lower if I used a HDD instead.
+This of course means about **~33 times** improvement over standard single CPU core. I'm using an SSD to store the password dictionary. This would be significantly lower if I used a HDD instead.
 
 Also keep in mind, that the preparation to start the hashing is longer in case of the GPU kernel. This is not included into the hash speed, since it is only done once in the beginning and it get insignificant in the case of bigger datasets, which this program is designed for.
 
-## **Milestone 7: Implementing salt compare on GPU (current)**
+## Milestone 7: Implementing salt compare on GPU *(completed)*
 
 At this point we have quite a few variables that are constant during the whole life of the kernel:
 - Hash
@@ -427,7 +467,7 @@ At this point we have quite a few variables that are constant during the whole l
 - Key length
 - Salt
 
-We can define these with the pre-compiler, to save the time of having to make buffers and pass them as parameters. We use the **uint array** version of the hash to spare a while set of computations.
+We can define these with the pre-compiler, to save the time of having to make buffers and pass them as parameters. We use the **uint array** version of the hash to spare a whole set of computations.
 
 ```opencl
 #DEFINE HASH_0 ...
@@ -454,17 +494,17 @@ sprintf(buildOptions,
          -D KEY_LENGTH=%d \
          -D SALT_LENGTH=%d \
          -D SALT_STRING=\"%s\"",
-		 hashDec[0], hashDec[1],
-		 hashDec[2], hashDec[3],
-		 hashDec[4], hashDec[5],
-		 hashDec[6], hashDec[7],
+		 hash[0], hash[1],
+		 hash[2], hash[3],
+		 hash[4], hash[5],
+		 hash[6], hash[7],
 		 MAX_KEY_SIZE, saltLength, salt);
 ```
 
 This still has one problem. You can't actually pass a string as a macro, so I had to convert it with the preprocessor of the kernel.
 
 ```opencl
-//Helper methods
+//Helper macros
 #define STR(s) #s      //Takes macro and returns it as a string
 #define XSTR(s) STR(s) //Takes macro and passes its value to be stringified
 
@@ -472,7 +512,7 @@ This still has one problem. You can't actually pass a string as a macro, so I ha
 char salt[] = XSTR(SALT_STRING); //Returns the value SALT_STRING as a string
 ```
 
-This way we can achieve just a tiny overhead when using salts in the gpu, since we only need to append the macro string. Also we know it's length to be a constant, so we can **unroll** the cycle.
+This way we can achieve just a tiny overhead when using salts in the gpu, since we only need to append the constant string. Also we know it's length to be a constant, so we can **unroll** the cycle.
 
 ```opencl
 #pragma unroll
@@ -483,23 +523,25 @@ for (unsigned int j = 0; j < SALT_LENGTH; j++)
 length += SALT_LENGTH;
 ```
 
-As you can see, if we disassemble this, the code is entirely gone. This is because the kernel will do this in one memory copy step when it is reserving the stack for the method. This makes it slower so insignificantly I can't measure it above the margin of error.
+As you can see, if we disassemble this, the memory is going to be set statically. This makes it nearly instantaneous, so I couldn't detect a performance difference  above margin of error.
 
 ```assembly
-s_load_dwordx2          s[0:1], s[4:5], 0x8             Varies
-v_mov_b32_e32           v0, 0x64636261                  Varies
-v_mov_b32_e32           v1, 0x68676665                  Varies
-s_waitcnt               lgkmcnt(0)                      Varies
-v_mov_b32_e32           v3, s1                          Varies
-v_mov_b32_e32           v2, s0                          Varies
-s_endpgm                                                1
+; Disassembled using Radeon GPU Analyzer
+v_add_u32_e32       v4, v0, v2
+v_mov_b32_e32       v5, 0x67
+ds_write_b8         v4, v5
+v_mov_b32_e32       v5, 0x6f
+ds_write_b8         v4, v5 offset:1
+ds_write_b8         v4, v5 offset:2
+v_mov_b32_e32       v5, 0x64
+ds_write_b8         v4, v5 offset:3
 ```
 
 One thing that makes is slower however, is having to copy the key string as well. Also longer key means more steps during hashing, so we get some performance penalty here.
 
 Hashing, salting and comparing `100,000` entries took `88,469 microseconds` = `0.088469 seconds`. `100,000/0.088469 = 1,130,339.4409...` => `~1,130.339 khcps`. 
 
-Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance if we are using a salt.
+Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance if we are using an 8 bit salt.
 
 |Method|Speed|Relative|
 |---|---|---|

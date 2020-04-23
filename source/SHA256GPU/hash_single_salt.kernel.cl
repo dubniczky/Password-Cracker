@@ -1,5 +1,6 @@
-//SHA256 encrypt kernel
+//SHA256 Single Salted Hash Kernel
 //Nagy Richard Antal
+//2020
 
 
 //SHA-256 context
@@ -12,13 +13,12 @@
 #define H6 0x1f83d9ab
 #define H7 0x5be0cd19
 
+
 //Methods
 inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
-
-    //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
 inline uint ch(uint x, uint y, uint z)
 {

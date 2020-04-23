@@ -137,6 +137,6 @@ std::string sha256(std::string input)
     for (int i = 0; i < SHA256::DIGEST_SIZE; i++)
     {
         sprintf(buf + i * 2, "%02x", digest[i]);
-    }       
+    }
     return std::string(buf);
 }

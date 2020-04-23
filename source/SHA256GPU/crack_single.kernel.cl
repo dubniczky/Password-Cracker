@@ -1,5 +1,6 @@
-//SHA256 encrypt kernel
+//SHA256 Single Crack Kernel
 //Nagy Richard Antal
+//2020
 
 
 //SHA-256 context
@@ -12,13 +13,12 @@
 #define H6 0x1f83d9ab
 #define H7 0x5be0cd19
 
+
 //Methods
 inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
-
-    //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
 inline uint ch(uint x, uint y, uint z)
 {
@@ -79,26 +79,16 @@ kernel void sha256crack_single_kernel(uint key_length, __global char* keys, __gl
     const char hex_charset[] = "0123456789abcdef";
 
 
-    //Load properties
+    //Initialize key
     uint globalID = get_global_id(0);
     __global char* key = keys + globalID * key_length;
-    //printf("%d %s\n", get_global_id(0), key);
-    
 
     for (length = 0; length < key_length && (key[length] != 0 && key[length] != '\n'); length++) { }
-    total = length % 64 >= 56 ? 2 : 1 + length / 64;
-
     key[length] = 0;
     //printf("%s ", key);
 
-    if (length == 0)
-    {
-        //printf("%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
-        //    key[8], key[9], key[10], key[11], key[12], key[13], key[14], key[15], key[16]);
-    }
-        
-
     //Reset algorithm
+    total = length % 64 >= 56 ? 2 : 1 + length / 64;
     uiresult[0] = H0;
     uiresult[1] = H1;
     uiresult[2] = H2;
@@ -121,7 +111,7 @@ kernel void sha256crack_single_kernel(uint key_length, __global char* keys, __gl
         G = uiresult[6];
         H = uiresult[7];
 
-#pragma unroll
+        #pragma unroll
         for (t = 0; t < 80; t++)
         {
             W[t] = 0x00000000;

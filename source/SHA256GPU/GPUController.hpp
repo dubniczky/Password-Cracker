@@ -21,7 +21,7 @@ using namespace std::chrono;
 class GPUController
 {
 private:
-	int HASH_THREAD_COUNT = 256;
+	int HASH_THREAD_COUNT = 1024;
 	const int MAX_KEY_SIZE = 17; //16
 	const int HASH_UINT_COUNT = 8;
 	const int HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint);

@@ -1,4 +1,4 @@
-//Command line arguments
+//Debug command line arguments
 /*
 platform
 hash single banana
@@ -25,6 +25,7 @@ crack single ../../passwords/passwords-100.txt fc9h6fsd1503052662d44b5f4aecd5201
 --encloses + Hf45DD salt
 crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa89cd889a4fccc6fe916a66dcd497ecc4c182a2
 */
+
 #include "GPUController.hpp"
 
 int main(int argc, char* argv[])

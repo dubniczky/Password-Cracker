@@ -1,4 +1,4 @@
-//SHA256 encrypt kernel
+//SHA256 Single Hash Kernel
 //Nagy Richard Antal
 
 
@@ -18,8 +18,6 @@ inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
-
-    //return (n < 32) ? (x >> n) | (x << (32 - n) : x;
 }
 inline uint ch(uint x, uint y, uint z)
 {
@@ -196,17 +194,6 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
         uiresult[5] += F;
         uiresult[6] += G;
         uiresult[7] += H;
-
-        /*
-        printf("%u ", uiresult[0]);
-        printf("%u ", uiresult[1]);
-        printf("%u ", uiresult[2]);
-        printf("%u ", uiresult[3]);
-        printf("%u ", uiresult[4]);
-        printf("%u ", uiresult[5]);
-        printf("%u ", uiresult[6]);
-        printf("%u ", uiresult[7]);
-        */
 
         //Convert uints to hex char array
         #pragma unroll

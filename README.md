@@ -552,3 +552,35 @@ Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance
 | GPU Salted Compare | 1,130.339 khcps | 3197% |
 
 ## **Milestone 8: Optimizing Kernel Iteration 2 (current)**
+
+### GPU Thread Count
+
+So far we are reading and then cracking a fixed amount of `256` keys every iteration. This of course is a low amount for the vast majority of video cards nowadays. We are doing the `copying & hashing` and `reading from file` at the same, but the copy+hash so far takes much shorter than reading. This of course can be fixed be feeding in more data at once.
+
+The optimal thread count is lower than the maximum allocation size of the gpu and around a **sweetspot** we don't actually know yet. So I tested it out:
+
+|Threads| Crack Time (microsec) | Time Delta | Total Time |
+|---|---|---|---|
+| 256 | 89681 | - | 100% |
+| 1024 | 52282| -32% | 58% |
+| 4096 | 43537| -9% | 49% |
+| 16,384 | 42589| -2% | 47% |
+| 32,768 | 40481| -2% | 45% |
+| 65,536 | 42880| +3% | 48% |
+| 131,072 | 42892| +0% | 48% |
+
+So the optimal size for my setup is somewhere between `32,768` and `65,536`. I continue the trials by halving the intervals and testing which side is minimal. The best result came from `46,960` threads with `39,885` microseconds. Which seems promising, so let's benchmark again.
+
+Hashing, salting and comparing `100,000` entries took `39,885 microseconds` = `0.039885 seconds`. `100,000/0.039885 = 2,507,208.2236...` => `~2,507.208 khcps`. 
+
+|Method|Speed|Relative|
+|---|---|---|
+| CPU Hash Compare | 35.353 khcps | 100% |
+| CPU Salted Compare | 32.196 khcps | 91% |
+| GPU Hash Compare | 175.776 khcps | 546% |
+| GPU Optimization 1 | 1,157.085 khcps | 3273% |
+| GPU Salted Compare | 1,130.339 khcps | 3197% |
+| GPU Optimization 2 | 2,507.208 khcps | 7092% |
+
+This means the GPU hash cracking is now `71 times` faster than using my single thread CPU.
+

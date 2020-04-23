@@ -1,23 +1,40 @@
-//SHA256 encrypt kernel
+//SHA256 Single Salted Cracking Kernel
 //Nagy Richard Antal
+//2020
 
-//Precompiler defined:
-//HASH_0 HASH_1 HASH_2 HASH_3 HASH_4 HASH_5 HASH_6 HASH_7
-//SALT_LENGTH SALT_STRING
-//KEY_LENGTH
+//#define USE_DEBUG_DEFAULTS
 
+#ifdef USE_DEBUG_DEFAULTS
+
+    #define KEY_LENGTH 17
+    #define SALT_LENGTH 6
+    #define SALT_STRING Hf45DD
+
+    //Key: 'enclosesHf45DD' (8:6)
+    #define HASH_0 2627633883
+    #define HASH_1 342531070
+    #define HASH_2 1941191403
+    #define HASH_3 4203335048
+    #define HASH_4 2588921030
+    #define HASH_5 4270942822
+    #define HASH_6 3704920044
+    #define HASH_7 3301016226
+
+#endif
+
+//String convert macro
 #define STR(s) #s
 #define XSTR(s) STR(s)
 
 //SHA-256 context
-#define H0 0x6a09e667
-#define H1 0xbb67ae85
-#define H2 0x3c6ef372
-#define H3 0xa54ff53a
-#define H4 0x510e527f
-#define H5 0x9b05688c
-#define H6 0x1f83d9ab
-#define H7 0x5be0cd19
+#define H_DEF0 0x6a09e667
+#define H_DEF1 0xbb67ae85
+#define H_DEF2 0x3c6ef372
+#define H_DEF3 0xa54ff53a
+#define H_DEF4 0x510e527f
+#define H_DEF5 0x9b05688c
+#define H_DEF6 0x1f83d9ab
+#define H_DEF7 0x5be0cd19
 
 
 //Methods
@@ -57,7 +74,6 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global char* res
 {
     //Initialize
     int t;
-    int gid;
     int msg_pad = 0;
     int cur_pad;
     int stop;
@@ -86,7 +102,7 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global char* res
     };
 
 
-    //Load properties
+    //Initialize key
     globalID = get_global_id(0);
     globalKey = keys + globalID * KEY_LENGTH;
 
@@ -97,6 +113,7 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global char* res
         key[length] = globalKey[length];
     }
     
+    //Append salt
     #pragma unroll
     for (unsigned int j = 0; j < SALT_LENGTH; j++)
     {
@@ -104,22 +121,18 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global char* res
     }
     length += SALT_LENGTH;
 
-    //printf("%s\n", key);
-
-    total = length % 64 >= 56 ? 2 : 1 + length / 64;
-
     //Reset algorithm
-    uiresult[0] = H0;
-    uiresult[1] = H1;
-    uiresult[2] = H2;
-    uiresult[3] = H3;
-    uiresult[4] = H4;
-    uiresult[5] = H5;
-    uiresult[6] = H6;
-    uiresult[7] = H7;
+    total = length % 64 >= 56 ? 2 : 1 + length / 64;
+    uiresult[0] = H_DEF0;
+    uiresult[1] = H_DEF1;
+    uiresult[2] = H_DEF2;
+    uiresult[3] = H_DEF3;
+    uiresult[4] = H_DEF4;
+    uiresult[5] = H_DEF5;
+    uiresult[6] = H_DEF6;
+    uiresult[7] = H_DEF7;
 
-
-    //Hash
+    //Hash key
     for (item = 0; item < total; item++)
     {
         A = uiresult[0];
@@ -227,16 +240,9 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global char* res
         uiresult[7] += H;
 
         //Verify result
-        if (uiresult[0] == HASH_0 && uiresult[1] == HASH_1 &&
-            uiresult[2] == HASH_2 && uiresult[3] == HASH_3 &&
-            uiresult[4] == HASH_4 && uiresult[5] == HASH_5 &&
-            uiresult[6] == HASH_6 && uiresult[7] == HASH_7)
-        {
-            results[globalID] = 1;
-        }
-        else
-        {
-            results[globalID] = 0;
-        }
+        results[globalID] = uiresult[0] == HASH_0 && uiresult[1] == HASH_1 &&
+                            uiresult[2] == HASH_2 && uiresult[3] == HASH_3 &&
+                            uiresult[4] == HASH_4 && uiresult[5] == HASH_5 &&
+                            uiresult[6] == HASH_6 && uiresult[7] == HASH_7;
     }
 }

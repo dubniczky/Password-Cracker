@@ -1,4 +1,4 @@
-#include "GPUController.hpp"
+﻿#include "GPUController.hpp"
 
 void GPUController::crackSingleSalted(string infileName, string hash)
 {
@@ -44,7 +44,13 @@ void GPUController::crackSingleSalted(string infileName, string hash)
 		    hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7],
 			MAX_KEY_SIZE, saltLength, salt);
 
-	int hashThreadCount = HASH_THREAD_COUNT;
+	//Calculate optimal thread size
+	cl_ulong maxMemoryAlloc = devices[deviceId].getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+	cl_ulong unitSize = MAX_KEY_SIZE;
+	int hashThreadCount = min(maxMemoryAlloc / MAX_KEY_SIZE, 46960);
+
+	printf("Optimal thread size: %u\n", hashThreadCount);
+	
 	try
 	{
 		printf("Compiling kernel...\n");

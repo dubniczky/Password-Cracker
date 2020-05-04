@@ -1,6 +1,6 @@
 
 # Password Hash Cracking on GPU
-*by: Richard Nagy, 2020*
+*by: Richard Nagy, 2020/02 - 2020/04*
 
 ## Quick Description
 
@@ -19,7 +19,8 @@ In this project I will recreate such a hashing solution from scratch with the SH
 5. Implementing hash compare on GPU
 6. Optimizing Kernel Iteration 1
 7. Implementing salt compare on GPU
-8. **Optimizing Kernel Iteration 2 (current)**
+8. Optimizing Kernel Iteration 2
+9. **Project complete (current)**
 
 
 ## Resources:
@@ -49,7 +50,7 @@ We are going to use a custom metric to compare results: **Hash Compare Per Secon
 This of course means the amount of hashes we can compare every given second. This does NOT include the time to start the cracking itself and gathering the data at the end. We are only interested in the hash time itself since the program only starts once, but it can keep running for hours, days or weeks.. until we run out of samples to feed it.
 
 Being a scalar unit, we can even use prefix multipliers:
-`1,000,000,000 hcps` = `1,000,000 khcps` = `1,000 mhcps` = `1 ghcps`
+`1,000,000,000 hcps` = `1,000,000 khcps` = `1,000 Mhcps` = `1 Ghcps`
 
 ## Milestone 1: implementing on CPU *(completed)*
 
@@ -551,7 +552,7 @@ Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance
 | GPU Optimization 1 | 1,157.085 khcps | 3273% |
 | GPU Salted Compare | 1,130.339 khcps | 3197% |
 
-## **Milestone 8: Optimizing Kernel Iteration 2 (current)**
+## Milestone 8: Optimizing Kernel Iteration 2 *(current)*
 
 ### GPU Thread Count
 
@@ -584,3 +585,30 @@ Hashing, salting and comparing `100,000` entries took `39,885 microseconds` = `0
 
 This means the GPU hash cracking is now `71 times` faster than using my single thread CPU.
 
+### Bulk cracking
+
+The comparisons were impressive enough already, but there is one more thing. In the case of the GPU methods I included the time to read the data in the calculations as well. Which is the correct way, but I did not do that back with the CPU version. So let's exclude it for a final comparison.
+
+Hashing, salting and comparing `100,000` entries took `2,575 microseconds` = `0.002575 seconds`. `100,000/0.002575 = 38,834,951.4563...` => `~39 Mhcps` . 
+
+|Method|Speed|Relative|
+|---|---|---|
+| CPU Hash Compare | 35.353 khcps | 100% |
+| CPU Salted Compare | 32.196 khcps | 91% |
+| GPU Hash Compare | 175.776 khcps | 546% |
+| GPU Optimization 1 | 1,157.085 khcps | 3273% |
+| GPU Salted Compare | 1,130.339 khcps | 3197% |
+| GPU Optimization 2 | 2,507.208 khcps | 7092% |
+| GPU O2 *Readtime Excluded* | 38,834.951 khcps | 109 849% |
+
+This means the GPU hash cracking true power is `1098 times` faster than using my single thread CPU, with 39 Mega hash compares per second.
+
+## Project complete *(current)*
+
+This has been a great project and a spectacular learning experience for me in the field of parallel computing. I would like to especially thank **Iván Eichhardt** from *ELTE Computer Graphics department* for being available to help when I hit some roadblocks.
+
+And of course, thank you for reading.
+
+
+Richard Nagy,
+2020/04

@@ -41,14 +41,15 @@ public:
 
 	void platform();
 
-	void singleHash(string key);
-	void singleHashSalted(string key, string salt);
-	void multiHash(string sourceFile, string targetFile);
+	void singleHash(std::string key);
+	void singleHashSalted(std::string key, std::string salt);
+	void multiHash(std::string sourceFile, std::string targetFile);
 
-	void crackSingle(string sourceFile, string hash);
-	void crackSingleSalted(string sourceFile, string hash);
+	void crackSingle(std::string sourceFile, std::string hash);
+	void crackSingleSalted(std::string sourceFile, std::string hash);
+	void crackSingleSaltedBulk(std::string sourceFile, std::string hash, unsigned int count);
 
 private:
-	bool compileKernel(string, string, std::string = "");
+	bool compileKernel(std::string, std::string, std::string = "");
 	cl_uint* hexdec(const char* hex);
 };

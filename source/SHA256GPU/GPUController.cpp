@@ -43,7 +43,7 @@ GPUController::GPUController(int deviceId)
 	queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
 }
 
-bool GPUController::compileKernel(string fileName, string kernelName, std::string params)
+bool GPUController::compileKernel(std::string fileName, std::string kernelName, std::string params)
 {
 	try
 	{

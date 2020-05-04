@@ -31,6 +31,9 @@
     <ClCompile Include="crackSingleSalted.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
+    <ClCompile Include="CrackSingleSaltedBulk.cpp">
+      <Filter>GPUController</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="hash_multiple.kernel.cl">

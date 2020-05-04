@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-void GPUController::singleHash(string key)
+void GPUController::singleHash(std::string key)
 {
 	try
 	{

@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-void GPUController::crackSingle(string infileName, string hash)
+void GPUController::crackSingle(std::string infileName, std::string hash)
 {
 	if (hash.length() > 64)
 	{

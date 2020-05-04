@@ -27,13 +27,16 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 */
 
 #include "GPUController.hpp"
+#include <string>
+#include <stdio.h>
+#include <numeric>
 
 int main(int argc, char* argv[])
 {
 	GPUController* gpuc;
 
 	//No arguments
-	if (argc < 2)
+	if (argc == 1)
 	{
 		printf("platform                                    : list platforms\n");
 		printf("hash single <password>                      : hash a single password\n");
@@ -68,14 +71,14 @@ int main(int argc, char* argv[])
 
 			if (argc < 5)
 			{
-				string key(argv[3]);
+				std::string key(argv[3]);
 				gpuc = new GPUController(0);
 				gpuc->singleHash(key);
 			}
 			else
 			{
-				string key(argv[3]);
-				string salt(argv[4]);
+				std::string key(argv[3]);
+				std::string salt(argv[4]);
 				gpuc = new GPUController();
 				gpuc->singleHashSalted(key, salt);
 			}
@@ -89,8 +92,8 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				string infile(argv[3]);
-				string outfile(argv[4]);
+				std::string infile(argv[3]);
+				std::string outfile(argv[4]);
 
 				gpuc = new GPUController();
 				gpuc->multiHash(infile, outfile);
@@ -119,10 +122,25 @@ int main(int argc, char* argv[])
 				return 0;
 			}
 
-			string sourceFile(argv[3]);
-			string hash(argv[4]);
+			std::string sourceFile(argv[3]);
+			std::string hash(argv[4]);
 			gpuc = new GPUController();
-			gpuc->crackSingle(sourceFile, hash);
+			gpuc->crackSingle(sourceFile, hash); //Salt will be used if included
+		}
+
+		if (strcmp(argv[2], "bulk") == 0)
+		{
+			if (argc < 6)
+			{
+				printf("<dictionary.txt> <hash> <test-count>\n");
+				return 0;
+			}
+
+			std::string sourceFile(argv[3]);
+			std::string hash(argv[4]);
+			unsigned int count = std::stoi(argv[5]);
+			gpuc = new GPUController();
+			gpuc->crackSingleSaltedBulk(sourceFile, hash, count);
 		}
 	}
 

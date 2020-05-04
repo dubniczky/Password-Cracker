@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-void GPUController::singleHashSalted(string key, string salt)
+void GPUController::singleHashSalted(std::string key, std::string salt)
 {
 	try
 	{

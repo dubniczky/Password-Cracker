@@ -1,6 +1,6 @@
-﻿#include "GPUController.hpp"
+#include "GPUController.hpp"
 
-void GPUController::crackSingleSalted(std::string infileName, std::string hash)
+void GPUController::crackSingleSaltedBulk(std::string infileName, std::string hash, unsigned int count)
 {
 	//Write hash
 	printf("Input: %s\n", hash.c_str());
@@ -39,18 +39,21 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 	char preproc[512];
 	sprintf(preproc,
-		    "-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u \
+		"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u \
              -D KEY_LENGTH=%d -D SALT_LENGTH=%d -D SALT_STRING=\"%s\"",
-		    hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7],
-			MAX_KEY_SIZE, saltLength, salt);
+		hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7],
+		MAX_KEY_SIZE, saltLength, salt);
 
 	//Calculate optimal thread size
 	cl_ulong maxMemoryAlloc = devices[deviceId].getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
 	cl_ulong unitSize = MAX_KEY_SIZE;
-	int hashThreadCount = min(maxMemoryAlloc / MAX_KEY_SIZE, 46960);
-
+	int hashThreadCount = min(maxMemoryAlloc / MAX_KEY_SIZE, count);
+	if (hashThreadCount != count)
+	{
+		printf("Bulk hash count reduced due to GPU resource limitations");
+	}
 	printf("Optimal thread size: %u\n", hashThreadCount);
-	
+
 	try
 	{
 		printf("Compiling kernel...\n");
@@ -67,16 +70,9 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 		//Initialize local variables
 		char* result = new char[hashThreadCount];
-		char* inputBuffer1 = new char[MAX_KEY_SIZE * hashThreadCount];
-		char* inputBuffer2 = new char[MAX_KEY_SIZE * hashThreadCount];
-		char* currentBuffer = inputBuffer1;
-		size_t match = -1;
-		int lineCount = 0;
+		char* inputBuffer = new char[MAX_KEY_SIZE * hashThreadCount];
 		cl::vector<Event> eventQueue;
 		int i = 0;
-		int previ = 0;
-		char bufferid = 0;
-		bool finished = false;
 
 		//Open file
 		FILE* infile = fopen(infileName.c_str(), "r");
@@ -85,71 +81,37 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 			printf("Infile could not be opened.\n");
 		}
 
-		//Start timer
-		auto startTime = high_resolution_clock::now();
-
-		printf("Cracking...\n");
-		for (; i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL; i++)
+		for (; i < hashThreadCount && fgets(&inputBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL; i++)
 		{
 
 		}
 
-		while (true)
+		//Start timer
+		auto startTime = high_resolution_clock::now();
+
+		printf("Cracking...\n");
+		// Write data on input buffers!
+		queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, inputBuffer, &eventQueue);
+
+		// Set arguments to kernel
+		kernel.setArg(0, keyBuffer);
+		kernel.setArg(1, resultBuffer);
+
+		//Run kernel
+		NDRange globalRange(i);
+		queue.enqueueNDRangeKernel(kernel, cl::NullRange, globalRange, cl::NullRange, NULL, &eventQueue[0]);
+		queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, i, result, &eventQueue);
+
+		//Await kernel
+		eventQueue[0].wait();
+
+		//Verify match
+		int matchIndex = -1;
+		for (int j = 0; j < i; j++)
 		{
-			if (finished)
+			if (result[j])
 			{
-				break;
-			}
-
-			// Write data on input buffers!
-			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, &eventQueue);
-			if (bufferid)
-			{
-				bufferid = false;
-				currentBuffer = inputBuffer1;
-			}
-			else
-			{
-				bufferid = true;
-				currentBuffer = inputBuffer2;
-			}
-
-			// Set arguments to kernel
-			kernel.setArg(0, keyBuffer);
-			kernel.setArg(1, resultBuffer);
-
-			//Run kernel
-			NDRange globalRange(i);
-			lineCount += i;
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, globalRange, cl::NullRange, NULL, &eventQueue[0]);
-			queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, i, result, &eventQueue);
-
-			//Read lines
-			int cline = 0;
-			for (; cline < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * cline], MAX_KEY_SIZE, infile); cline++)
-			{
-
-			}
-			if (cline == 0) finished = true;
-
-			//Await kernel
-			eventQueue[0].wait();
-
-			//Verify match
-			for (int j = 0; j < i; j++)
-			{
-				if (result[j])
-				{
-					match = lineCount + j;
-					hashThreadCount = j;
-					break;
-				}
-			}
-
-			i = cline;
-
-			if (match != -1)
-			{
+				matchIndex = j;
 				break;
 			}
 		}
@@ -161,11 +123,11 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 		printf("Crack kernel completed.\n");
 
-		if (match == -1)
+		if (matchIndex == -1)
 		{
 			printf("===============\nNo match found.\n");
 
-			printf("Lines verified: %d\n", lineCount);
+			printf("Lines verified: %d\n", i);
 
 			printf("===============\n");
 		}
@@ -173,18 +135,10 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 		{
 			printf("===============\nMatch found.\n");
 
-			if (bufferid)
-			{
-				char* res = &inputBuffer1[hashThreadCount * MAX_KEY_SIZE];
-				printf("Key: '%s'\n", res);
-			}
-			else
-			{
-				char* res = &inputBuffer2[hashThreadCount * MAX_KEY_SIZE];
-				printf("Key: '%s'\n", res);
-			}
+			char* res = &inputBuffer[matchIndex * MAX_KEY_SIZE];
+			printf("Key: '%s'\n", res);
 
-			printf("Line: %d\n", lineCount);
+			printf("Line: %d\n", i);
 
 			printf("===============\n");
 		}

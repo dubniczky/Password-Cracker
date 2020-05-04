@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-void GPUController::multiHash(string infileName, string outfileName)
+void GPUController::multiHash(std::string infileName, std::string outfileName)
 {
 	int hashThreadCount = HASH_THREAD_COUNT;
 	try

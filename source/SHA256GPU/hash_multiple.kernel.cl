@@ -20,7 +20,7 @@ __local inline uint rotr(uint x, int n)
     if (n < 32) return (x >> n) | (x << (32 - n));
     return x;
 }
-inline uint ch(uint x, uint y, uint z)
+inline uint ch(uint x, uint y, uint z) //choice
 {
     return (x & y) ^ (~x & z);
 }
@@ -38,11 +38,11 @@ inline uint sig1(uint x)
 }
 inline uint ep0(uint x)
 {
-    return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3);
+    return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3); //shear bits by 3
 }
 inline uint ep1(uint x)
 {
-    return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
+    return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10); //shear bits by 3
 }
 
 
@@ -117,6 +117,7 @@ kernel void sha256multiple_kernel(uint key_length, __global char* keys, __global
             W[t] = 0x00000000;
         }
 
+        //Set padding
         msg_pad = item * 64;
         if (length > msg_pad)
         {
@@ -179,6 +180,7 @@ kernel void sha256multiple_kernel(uint key_length, __global char* keys, __global
 
         for (t = 0; t < 64; t++)
         {
+            //Create W16 block form ep1:t-2, t-7, ep0:t-15, t-16
             if (t >= 16)
             {
                 W[t] = ep1(W[t - 2]) + W[t - 7] + ep0(W[t - 15]) + W[t - 16];

@@ -81,13 +81,6 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
     uint globalID; //Global worker id
     global uchar* key; //Global target key location
     uint W[80];
-    uint dynamicPadding[4] =
-    {
-        0x80000000, //2 ** 31
-        0x800000,   //2 ** 23
-        0x8000,     //2 ** 15
-        0x80        //2 ** 7
-    };
     const uint K[64] =
     {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -128,10 +121,18 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
         W[t] |= (key[t * 4 + 3]);
     }
 
-    W[qua]  = ((key[qua * 4 + 0]) << 24) * (1 - (mod % 1));
-    W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
-    W[qua] |= ((key[qua * 4 + 2]) << 8)  * (1 - (mod % 3));
-    W[qua] |= dynamicPadding[mod];
+    if (mod == 0)
+    {
+        W[qua] = 0x80000000;
+    }
+    else
+    {
+        W[qua] = ((key[qua * 4 + 0]) << 24) * (1 - (mod % 1));
+        W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
+        W[qua] |= ((key[qua * 4 + 2]) << 8) * (1 - (mod % 3));
+        W[qua] |= 0x80 << 8 * (3 - mod);
+    }
+
     W[15] = length * 8; //Add key length
 
 
@@ -141,7 +142,6 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
     {
         W[i] = sig1(W[i - 2]) + W[i - 7] + sig0(W[i - 15]) + W[i - 16];
     }
-
 
     //Prepare compression
     A = H0;
@@ -172,7 +172,7 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
         B = A;
         A = T1 + T2;
     }
-
+    
 
     //Verify result
     if (A + H0 == HASH_0 && B + H1 == HASH_1 &&

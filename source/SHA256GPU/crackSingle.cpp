@@ -144,12 +144,12 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 
 		fclose(infile);
 
-		printf("Crack kernel completed.\n");
+		printf("Crack kernel finished.\n");
 
 		if (result == 0)
 		{
 			printf("===============\nNo match found.\n");
-			printf("Lines verified: %d\n", lineCount + 1);
+			printf("Lines verified: %d\n", lineCount);
 			printf("===============\n");
 		}
 		else

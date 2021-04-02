@@ -27,7 +27,8 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 	printf("]\n");
 
 	//Write Decform
-	cl_uint* hashDec = hexdec(hashc);
+	cl_uint hashDec[8];
+	hexToDec(hashc, hashDec);
 	printf("Hash decform: [ ");
 	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT; i++)
@@ -45,7 +46,7 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 			MAX_KEY_SIZE, saltLength, salt);
 
 	//Calculate optimal thread size
-	cl_ulong maxMemoryAlloc = devices[deviceId].getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+	cl_ulong maxMemoryAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
 	cl_ulong unitSize = MAX_KEY_SIZE;
 	int hashThreadCount = min(maxMemoryAlloc / MAX_KEY_SIZE, 46960);
 
@@ -194,7 +195,6 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
 		delete[] result;
-		delete[] hashDec;
 		delete[] salt;
 	}
 	catch (Error error)

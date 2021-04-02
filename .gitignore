@@ -23,3 +23,12 @@
 *.exe
 *.out
 *.app
+
+# Binary folders
+Debug/
+Release/
+bin/
+obj/
+
+# VSC Config folders
+.vs/

@@ -22,16 +22,13 @@
     <ClCompile Include="multiHash.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
-    <ClCompile Include="platform.cpp">
-      <Filter>GPUController</Filter>
-    </ClCompile>
     <ClCompile Include="crackSingle.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
     <ClCompile Include="crackSingleSalted.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
-    <ClCompile Include="CrackSingleSaltedBulk.cpp">
+    <ClCompile Include="platformDetails.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
   </ItemGroup>

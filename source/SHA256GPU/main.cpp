@@ -5,12 +5,12 @@ hash single banana
 hash single banana xyzw
 hash multiple ../../passwords/passwords-100k.txt result.txt
 
---banana hash
+--banana hash (100k: line 436)
 crack single ../../passwords/passwords-100.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e
 crack single ../../passwords/passwords-100k.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e
 crack single ../../passwords/passwords-4m.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e
 
---gulyasleves hash
+--gulyasleves hash 
 crack single ../../passwords/passwords-100.txt 15062cd57ae7b7eaf0aa3262fb44428a13bfc4686fcd84ba4a7a092bf7556e42
 crack single ../../passwords/passwords-100k.txt 15062cd57ae7b7eaf0aa3262fb44428a13bfc4686fcd84ba4a7a092bf7556e42
 crack single ../../passwords/passwords-4m.txt 15062cd57ae7b7eaf0aa3262fb44428a13bfc4686fcd84ba4a7a092bf7556e42
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	if (strcmp(argv[1], "platform") == 0)
 	{
 		gpuc = new GPUController();
-		gpuc->platform();
+		gpuc->platformDetails();
 	}
 	//Hash
 	else if (strcmp(argv[1], "hash") == 0)
@@ -72,7 +72,8 @@ int main(int argc, char* argv[])
 			if (argc < 5)
 			{
 				std::string key(argv[3]);
-				gpuc = new GPUController(0);
+				gpuc = new GPUController();
+				gpuc->attachDevice();
 				gpuc->singleHash(key);
 			}
 			else
@@ -80,6 +81,7 @@ int main(int argc, char* argv[])
 				std::string key(argv[3]);
 				std::string salt(argv[4]);
 				gpuc = new GPUController();
+				gpuc->attachDevice();
 				gpuc->singleHashSalted(key, salt);
 			}
 		}
@@ -125,22 +127,8 @@ int main(int argc, char* argv[])
 			std::string sourceFile(argv[3]);
 			std::string hash(argv[4]);
 			gpuc = new GPUController();
+			gpuc->attachDevice();
 			gpuc->crackSingle(sourceFile, hash); //Salt will be used if included
-		}
-
-		if (strcmp(argv[2], "bulk") == 0)
-		{
-			if (argc < 6)
-			{
-				printf("<dictionary.txt> <hash> <test-count>\n");
-				return 0;
-			}
-
-			std::string sourceFile(argv[3]);
-			std::string hash(argv[4]);
-			unsigned int count = std::stoi(argv[5]);
-			gpuc = new GPUController();
-			gpuc->crackSingleSaltedBulk(sourceFile, hash, count);
 		}
 	}
 

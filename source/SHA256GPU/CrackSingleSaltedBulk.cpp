@@ -27,7 +27,8 @@ void GPUController::crackSingleSaltedBulk(std::string infileName, std::string ha
 	printf("]\n");
 
 	//Write Decform
-	cl_uint* hashDec = hexdec(hashc);
+	cl_uint hashDec[8];
+	hexToDec(hashc, hashDec);
 	printf("Hash decform: [ ");
 	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT; i++)

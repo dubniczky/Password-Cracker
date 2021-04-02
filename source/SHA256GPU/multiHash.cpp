@@ -2,7 +2,7 @@
 
 void GPUController::multiHash(std::string infileName, std::string outfileName)
 {
-	int hashThreadCount = HASH_THREAD_COUNT;
+	int hashThreadCount = threadSize;
 	try
 	{
 		printf("Compiling kernel...\n");

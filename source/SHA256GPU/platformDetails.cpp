@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-void GPUController::platform()
+void GPUController::platformDetails() const
 {
 	try
 	{
@@ -15,11 +15,12 @@ void GPUController::platform()
 		vector<Device> devices;
 		Context context;
 
-		int platformID = 0;
+		int platformID = -1;
 		for (Platform p : platforms)
 		{
 			try
 			{
+				platformID++;
 				std::cout << "* " << p.getInfo<CL_PLATFORM_NAME>() << std::endl;
 				std::cout << "\t" << p.getInfo<CL_PLATFORM_VERSION>() << std::endl;
 
@@ -48,12 +49,12 @@ void GPUController::platform()
 					std::cout << "\t\tClock frequency:  " << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << " MHz" << std::endl;
 					
 					std::cout << "\t\tMemory size:      " << device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / 1024.0f / 1024.0f << " MB" << std::endl;
-					std::cout << "\t\t       alloc:     " << device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() / 1024 / 1024 << " MB" << std::endl;
+					std::cout << "\t\tMemory alloc:     " << device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>() / 1024 / 1024 << " MB" << std::endl;
 					std::cout << "\t\tCache type:       " << device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_TYPE>() << std::endl;
-					std::cout << "\t\t      size:       " << device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>() / 1024.0f << " KB" << std::endl;
+					std::cout << "\t\tCache size:       " << device.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>() / 1024.0f << " KB" << std::endl;
 
-					std::cout << "\t\tVersion device:   " << device.getInfo<CL_DEVICE_VERSION>() << std::endl;
-					std::cout << "\t\t        driver:   " << device.getInfo<CL_DRIVER_VERSION>() << std::endl;
+					std::cout << "\t\tDevice Version:   " << device.getInfo<CL_DEVICE_VERSION>() << std::endl;
+					std::cout << "\t\tDriver Version:   " << device.getInfo<CL_DRIVER_VERSION>() << std::endl;
 					deviceID++;
 				}
 			}
@@ -61,7 +62,7 @@ void GPUController::platform()
 			{
 				oclPrintError(error);
 			}
-			platformID++;
+			
 		}
 
 		if (devices.size() == 0)

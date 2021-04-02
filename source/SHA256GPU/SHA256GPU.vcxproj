@@ -154,11 +154,10 @@
   <ItemGroup>
     <ClCompile Include="crackSingle.cpp" />
     <ClCompile Include="crackSingleSalted.cpp" />
-    <ClCompile Include="CrackSingleSaltedBulk.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="GPUController.cpp" />
     <ClCompile Include="multiHash.cpp" />
-    <ClCompile Include="platform.cpp" />
+    <ClCompile Include="platformDetails.cpp" />
     <ClCompile Include="singleHash.cpp" />
     <ClCompile Include="singleHashSalted.cpp" />
   </ItemGroup>

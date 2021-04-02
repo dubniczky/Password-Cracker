@@ -1,59 +1,81 @@
 #include "GPUController.hpp"
 
-GPUController::GPUController() : GPUController(0)
+GPUController::GPUController() : platformId(0), deviceId(0), threadSize(1024)
 {
 	
 }
-GPUController::GPUController(int deviceId)
+GPUController::GPUController(int platformId, int deviceId, int threadSize)
 {
-	this->deviceId = deviceId;
-
-	Platform::get(&platforms);
-
-	for (Platform p : platforms)
-	{
-		try
-		{
-			// Select the default platform and create a context using this platform and the GPU
-			cl_context_properties cps[3] =
-			{
-				CL_CONTEXT_PLATFORM,
-				(cl_context_properties)(p)(),
-				0
-			};
-
-			context = Context(CL_DEVICE_TYPE_GPU, cps);
-			devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		}
-		catch (Error error)
-		{
-			oclPrintError(error);
-			continue;
-		}
-
-		if (devices.size() > 0)
-			break;
-	}
-
-	if (devices.size() == 0)
-	{
-		throw Error(CL_INVALID_CONTEXT, "Failed to create a valid context!");
-	}
-
-	queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
+	this->attachDevice(platformId, deviceId, threadSize);
 }
 
-bool GPUController::compileKernel(std::string fileName, std::string kernelName, std::string params)
+bool GPUController::attachDevice(const int platformId, const int deviceId, const int threadSize)
+{
+	//Guard
+	if (platformId < 0) throw Error(CL_INVALID_CONTEXT, "Invalid platform ID.");
+	if (deviceId < 0) throw Error(CL_INVALID_CONTEXT, "Invalid device ID.");
+	if (threadSize < 1) throw Error(CL_INVALID_CONTEXT, "Invalid thread size.");
+
+
+	//Get device
+	cl::vector<cl::Platform> platforms;
+	cl::vector<cl::Device> devices;
+	Context context;
+
+
+	//Validate requested device
+	try
+	{
+		//Get platform
+		Platform::get(&platforms);
+		cl_context_properties cps[3] =
+		{
+			CL_CONTEXT_PLATFORM,
+			(cl_context_properties)(platforms[platformId])(),
+			(cl_context_properties)0
+		};
+
+		//Get device
+		context = Context(CL_DEVICE_TYPE_GPU, cps);
+		devices = context.getInfo<CL_CONTEXT_DEVICES>();
+		if (devices.size() <= deviceId)
+		{
+			throw Error(CL_INVALID_CONTEXT, "No compatible devices found!");
+		}
+	}
+	catch (cl::Error error)
+	{
+		oclPrintError(error);
+		throw error;
+	}
+
+	//Construct instance
+	this->platformId = platformId;
+	this->deviceId = deviceId;
+	this->platform = platforms[platformId];
+	this->device = devices[deviceId];
+	this->context = context;
+	this->queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
+
+	std::cout << "Device Attached: (" << platformId << ":" << deviceId << ")" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+}
+
+
+bool GPUController::compileKernel(const std::string fileName, const std::string kernelName, const std::string params)
 {
 	try
 	{
+		//Read source code
 		std::ifstream sourceFile(fileName.c_str());
-		std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
-			(std::istreambuf_iterator<char>()));
+		std::string sourceCode(std::istreambuf_iterator<char>(sourceFile), (std::istreambuf_iterator<char>()));
 		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
-		program = Program(context, source);
-		program.build(devices, params.c_str());
-		kernel = Kernel(program, kernelName.c_str());
+
+		//Compile
+		cl::vector<cl::Device> devices;
+		devices.push_back(this->device);
+		this->program = Program(context, source);
+		this->program.build(devices, params.c_str());
+		this->kernel = Kernel(this->program, kernelName.c_str());
 		return true;
 	}
 	catch (Error error)
@@ -61,35 +83,26 @@ bool GPUController::compileKernel(std::string fileName, std::string kernelName, 
 		oclPrintError(error);
 		if (error.err() == CL_BUILD_PROGRAM_FAILURE)
 		{
-			for (cl::Device dev : devices)
-			{
-				// Check the build status
-				cl_build_status status = program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(dev);
-				if (status != CL_BUILD_ERROR)
-					continue;
+			// Check the build status
+			cl_build_status status = this->program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(this->device);
 
-				// Get the build log
-				std::string name = dev.getInfo<CL_DEVICE_NAME>();
-				std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(dev);
-				std::cerr << "Build log for " << name << ":" << std::endl
-					<< buildlog << std::endl;
-			}
+			// Get the build log
+			std::string name = this->device.getInfo<CL_DEVICE_NAME>();
+			std::string buildlog = this->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(this->device);
+			std::cerr << "Build log for " << name << ":" << std::endl
+				<< buildlog << std::endl;
 		}
 		return false;
 	}
+	return false;
 }
-cl_uint* GPUController::hexdec(const char* hex)
+void GPUController::hexToDec(const char* hex, const cl_uint* dec) const
 {
-	cl_uint* res = new cl_uint[HASH_UINT_COUNT];
 	char chunk[8];
-
 	#pragma unroll
-	for (int i = 0; i < HASH_UINT_COUNT; i++)
+	for (int i = 0; i < 8; i++)
 	{
-		memcpy(&chunk, &hex[i*8], sizeof(char) * 8);
-		sscanf(chunk, "%x", &res[i]);
-		//printf("%u ", &res[i]);
+		memcpy(&chunk, &hex[i * 8], sizeof(char) * 8);
+		sscanf(chunk, "%x", &dec[i]);
 	}
-	//printf("\n");
-	return res;
 }

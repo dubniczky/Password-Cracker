@@ -1,6 +1,6 @@
 ﻿#include "GPUController.hpp"
 
-void GPUController::crackSingleSalted(std::string infileName, std::string hash)
+std::string GPUController::crackSingleSalted(std::string infileName, std::string hash)
 {
 	//Write hash
 	printf("Input: %s\n", hash.c_str());
@@ -28,7 +28,7 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 	//Write Decform
 	cl_uint hashDec[8];
-	hexToDec(hashc, hashDec);
+	hexToDec(hash, hashDec);
 	printf("Hash decform: [ ");
 	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT; i++)
@@ -57,7 +57,7 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 		printf("Compiling kernel...\n");
 		if (!compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", preproc))
 		{
-			return;
+			return std::string();
 		}
 		printf("Kernel compiled.\n");
 
@@ -162,11 +162,13 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 		printf("Crack kernel completed.\n");
 
+		std::string outString;
 		if (match == -1)
 		{
 			printf("===============\nNo match found.\n");
 
 			printf("Lines verified: %d\n", lineCount);
+			outString = "";
 
 			printf("===============\n");
 		}
@@ -178,11 +180,13 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 			{
 				char* res = &inputBuffer1[hashThreadCount * MAX_KEY_SIZE];
 				printf("Key: '%s'\n", res);
+				outString = std::string(res);
 			}
 			else
 			{
 				char* res = &inputBuffer2[hashThreadCount * MAX_KEY_SIZE];
 				printf("Key: '%s'\n", res);
+				outString = std::string(res);
 			}
 
 			printf("Line: %d\n", lineCount);
@@ -196,9 +200,11 @@ void GPUController::crackSingleSalted(std::string infileName, std::string hash)
 
 		delete[] result;
 		delete[] salt;
+		return outString;
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		return std::string();
 	}
 }

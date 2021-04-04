@@ -1,14 +1,16 @@
 #include "GPUController.hpp"
 
-void GPUController::singleHash(std::string key)
+std::string GPUController::singleHash(std::string key)
 {
 	try
 	{
 		//Compile kernel
+		printf("Compiling kernel...\n");
 		if (!compileKernel("hash_single.kernel.cl", "sha256single_kernel"))
 		{
-			return;
+			return std::string();
 		}
+		printf("Kernel compiled.\n");
 
 		//Prepare input
 		cl_uint length = key.length();
@@ -36,9 +38,11 @@ void GPUController::singleHash(std::string key)
 
 		//Print result
 		printf("%s\n", result);
+		return std::string(result);
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		return std::string();
 	}
 }

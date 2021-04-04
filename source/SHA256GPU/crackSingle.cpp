@@ -1,12 +1,12 @@
 #include "GPUController.hpp"
 
-void GPUController::crackSingle(const std::string infileName, const std::string hash)
+std::string GPUController::crackSingle(const std::string infileName, const std::string hash)
 {
 	//Redirect if salted
 	if (hash.length() > 64)
 	{
 		crackSingleSalted(infileName, hash);
-		return;
+		return std::string();
 	}
 
 
@@ -27,7 +27,7 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 	
 	//Print decimal form
 	cl_uint hashDec[8];
-	hexToDec(hashc, hashDec);
+	hexToDec(hash, hashDec);
 	printf("Hash decform: [ ");
 	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
@@ -50,7 +50,7 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 		printf("Compiling kernel...\n");
 		if (!compileKernel("crack_single.kernel.cl", "sha256crack_single_kernel", command))
 		{
-			return;
+			return std::string();
 		}
 		printf("Kernel compiled.\n");
 
@@ -96,7 +96,6 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 		
 		while (run)
 		{
-			// Write data on input buffers
 			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, &eventQueue);
 			if (bufferid)
 			{
@@ -146,6 +145,7 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 
 		printf("Crack kernel finished.\n");
 
+		std::string outString = "";
 		if (result == 0)
 		{
 			printf("===============\nNo match found.\n");
@@ -168,6 +168,8 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 				}
 			}
 
+			outString = std::string(res);
+
 			printf("===============\nMatch found.\n");
 			printf("Key: '%s'\n", res);			
 			printf("Line: %d\n===============\n", lineCount);
@@ -176,9 +178,11 @@ void GPUController::crackSingle(const std::string infileName, const std::string 
 		long micro = (long)duration.count();
 		printf("Runtime: %lu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
+		return outString;
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		return std::string();
 	}
 }

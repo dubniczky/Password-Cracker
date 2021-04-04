@@ -1,28 +1,29 @@
 #include "GPUController.hpp"
 
-void GPUController::multiHash(std::string infileName, std::string outfileName)
+unsigned int GPUController::multiHash(std::string infileName, std::string outfileName)
 {
 	int hashThreadCount = threadSize;
 	try
 	{
 		printf("Compiling kernel...\n");
-		if (!compileKernel("hash_multiple.kernel.cl", "sha256multiple_kernel"))
+		if (!compileKernel("hash_multiple.kernel.cl", "sha256hash_multiple_kernel"))
 		{
-			return;
+			return 0;
 		}
 		printf("Kernel compiled.\n");
 
-		//Prepare input
+		//Read keys
 		printf("Reading file...\n");
 		std::vector<std::string> lines;
 		std::string line;
-		std::ifstream infile(infileName.c_str());
+		std::ifstream infile(infileName);
 		while (std::getline(infile, line))
 		{
 			lines.push_back(line);
 		}
 		infile.close();
 		printf("Read %d lines.\n", lines.size());
+
 
 		int iterations = (lines.size() / hashThreadCount) + (lines.size() % hashThreadCount > 0 ? 1 : 0);
 
@@ -38,6 +39,7 @@ void GPUController::multiHash(std::string infileName, std::string outfileName)
 				longest = lines[i].length();
 			}
 		}
+		printf("Longest Key: %u\n", longest);
 		longest += 1;
 		cl_uint bufferSize = hashThreadCount * longest;
 
@@ -91,9 +93,11 @@ void GPUController::multiHash(std::string infileName, std::string outfileName)
 		outFile.close();
 		delete[] result;
 		printf("File saved.\n");
+		return lines.size();
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		return 0;
 	}
 }

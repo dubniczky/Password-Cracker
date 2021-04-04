@@ -110,13 +110,15 @@ bool GPUController::compileKernel(const std::string fileName, const std::string 
 	}
 	return false;
 }
-void GPUController::hexToDec(const char* hex, const cl_uint* dec) const
+void GPUController::hexToDec(const std::string hex, cl_uint* dec) const
 {
-	char chunk[8];
 	#pragma unroll
-	for (int i = 0; i < 8; i++)
+	std::stringstream ss;
+	for (size_t i = 0; i < 8; i++)
 	{
-		memcpy(&chunk, &hex[i * 8], sizeof(char) * 8);
-		sscanf(chunk, "%x", &dec[i]);
+		ss << std::hex << hex.substr(i * 8, 8);
+		ss >> dec[i];
+		ss.str("");
+		ss.clear();
 	}
 }

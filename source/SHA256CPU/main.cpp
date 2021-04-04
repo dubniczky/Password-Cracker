@@ -1,7 +1,3 @@
-//Nagy Richard Antal
-//V7BFDU
-
-//Preprocessor requires: _CRT_SECURE_NO_WARNINGS flag to enable spritf
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
@@ -10,6 +6,7 @@
 #include <chrono>
 #include <vector>
 #include "sha256.h"
+
 
 using std::string;
 using std::ifstream;

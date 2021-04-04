@@ -31,10 +31,16 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 #include <stdio.h>
 #include <numeric>
 
+//Test
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
 
+//Link
+#pragma comment(lib, "OpenCL.lib")
+
+
+//Main
 int main(int argc, char* argv[])
 {
 	GPUController* gpuc;

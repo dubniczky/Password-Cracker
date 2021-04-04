@@ -4,4 +4,8 @@
     <LocalDebuggerCommandArguments>../../passwords/target-gulyasleves-salted.txt ../../passwords/passwords-100k.txt</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|Win32'">
+    <LocalDebuggerCommandArguments>../../passwords/target-gulyasleves-salted.txt ../../passwords/passwords-100k.txt</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

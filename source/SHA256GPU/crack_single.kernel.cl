@@ -127,7 +127,7 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
     }
     else
     {
-        W[qua] = ((key[qua * 4 + 0]) << 24) * (1 - (mod % 1));
+        W[qua]  = ((key[qua * 4 + 0]) << 24);
         W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
         W[qua] |= ((key[qua * 4 + 2]) << 8) * (1 - (mod % 3));
         W[qua] |= 0x80 << 8 * (3 - mod);
@@ -142,6 +142,7 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
     {
         W[i] = sig1(W[i - 2]) + W[i - 7] + sig0(W[i - 15]) + W[i - 16];
     }
+
 
     //Prepare compression
     A = H0;

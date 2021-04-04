@@ -105,12 +105,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>T:\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>T:\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -164,11 +167,15 @@
     <ClCompile Include="singleHashSalted.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="crack_single.kernel.cl" />
+    <None Include="sha256.cl" />
+    <None Include="crack_single.kernel.cl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ExcludedFromBuild>
+      <FileType>Document</FileType>
+    </None>
     <None Include="crack_single_salted.kernel.cl" />
     <None Include="hash_multiple.kernel.cl" />
     <None Include="hash_single.kernel.cl" />
-    <None Include="hash_single_salt.kernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GPUController.hpp" />

@@ -5,7 +5,7 @@ void GPUController::singleHashSalted(std::string key, std::string salt)
 	try
 	{
 		//Compile kernel
-		if (!compileKernel("hash_single_salt.kernel.cl", "sha256salted_kernel"))
+		if (!compileKernel("./kernels/hash_single_salt.kernel.cl", "sha256salted_kernel"))
 		{
 			return;
 		}

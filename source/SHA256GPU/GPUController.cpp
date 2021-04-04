@@ -68,6 +68,20 @@ bool GPUController::compileKernel(const std::string fileName, const std::string 
 		//Read source code
 		std::ifstream sourceFile(fileName.c_str());
 		std::string sourceCode(std::istreambuf_iterator<char>(sourceFile), (std::istreambuf_iterator<char>()));
+		sourceFile.close();
+
+		//Attach sha256 if included
+		std::string baseInclude = "#include \"sha256.cl\"";
+		size_t includePosition = sourceCode.find(baseInclude);
+		if (includePosition != std::string::npos)
+		{
+			std::ifstream baseFile("sha256.cl");
+			std::string baseCode(std::istreambuf_iterator<char>(baseFile), (std::istreambuf_iterator<char>()));
+			baseFile.close();
+
+			sourceCode.replace(includePosition, baseInclude.length(), baseCode);
+		}
+		
 		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 
 		//Compile

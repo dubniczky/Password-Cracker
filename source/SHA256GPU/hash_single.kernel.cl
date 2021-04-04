@@ -1,67 +1,24 @@
+//===================
+//| GPU Kernel code |
+//| DO NOT MODIFY!! |
+//===================
+//
 //SHA256 Single Hash Kernel
-//Nagy Richard Antal
+//Nagy Richard Antal, 2021
 
-
-//SHA-256 context
-#define H0 0x6a09e667
-#define H1 0xbb67ae85
-#define H2 0x3c6ef372
-#define H3 0xa54ff53a
-#define H4 0x510e527f
-#define H5 0x9b05688c
-#define H6 0x1f83d9ab
-#define H7 0x5be0cd19
-
-
-//Methods
-// << : bitshift left
-// >> : bitshift right
-// ^  : bitwise XOR
-// ~  : bitwise NOT
-// &  : bitwise AND
-// |  : bitwise OR
-inline uint rotr(uint x, int n) //Rotate right
-{
-    return (x >> n) | (x << (32 - n));
-}
-inline uint ch(uint x, uint y, uint z) //Choice based on x
-{
-    return (x & y) ^ (~x & z);
-}
-inline uint maj(uint x, uint y, uint z) //Majority bits
-{
-    return (x & y) ^ (x & z) ^ (y & z);
-}
-inline uint sig0(uint x)
-{
-    return rotr(x, 7) ^ rotr(x, 18) ^ (x >> 3);
-}
-inline uint sig1(uint x)
-{
-    return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
-}
-inline uint csig0(uint x)
-{
-    return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
-}
-inline uint csig1(uint x)
-{
-    return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25);
-}
-
+#include "sha256.cl"
 
 //Kernel
-kernel void sha256single_kernel(uint key_length, __global char* key, __global char* result)
+kernel void sha256single_kernel(uint keyLength, global char* key, global char* result)
 {
     //Initialize
-    int t;
     int qua; //Message schedule step modulus
     int mod; //Message schedule step modulus
     uint A, B, C, D, E, F, G, H; //Compression targets
     uint T1, T2; //Compression temp
     uint globalID; //Global worker id
-    uint W[80];
-    const uint K[64] =
+    uint W[80]; //Message schedule
+    const uint K[64] = //Cube roots of first 64 primes
     {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -83,14 +40,14 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
 
 
     //Create message block
-    qua = key_length / 4;
-    mod = key_length % 4;
-    for (t = 0; t < qua; t++)
+    qua = keyLength / 4;
+    mod = keyLength % 4;
+    for (int i = 0; i < qua; i++)
     {
-        W[t] = (key[t * 4 + 0]) << 24;
-        W[t] |= (key[t * 4 + 1]) << 16;
-        W[t] |= (key[t * 4 + 2]) << 8;
-        W[t] |= (key[t * 4 + 3]);
+        W[i]  = (key[i * 4 + 0]) << 24;
+        W[i] |= (key[i * 4 + 1]) << 16;
+        W[i] |= (key[i * 4 + 2]) << 8;
+        W[i] |= (key[i * 4 + 3]);
     }
 
     if (mod == 0)
@@ -99,13 +56,13 @@ kernel void sha256single_kernel(uint key_length, __global char* key, __global ch
     }
     else
     {
-        W[qua] = ((key[qua * 4 + 0]) << 24);
+        W[qua]  = ((key[qua * 4 + 0]) << 24);
         W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
         W[qua] |= ((key[qua * 4 + 2]) << 8) * (1 - (mod % 3));
         W[qua] |= 0x80 << 8 * (3 - mod);
     }
 
-    W[15] = key_length * 8; //Add key length
+    W[15] = keyLength * 8; //Add key length
 
 
     //Run message schedule

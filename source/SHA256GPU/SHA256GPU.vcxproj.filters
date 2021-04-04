@@ -1,18 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Kernels">
-      <UniqueIdentifier>{519487e5-3a12-48d5-ba35-c8da4d3eebd9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GPUController">
       <UniqueIdentifier>{4f6c6b19-9095-4568-937a-5563140d0441}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Kernels">
+      <UniqueIdentifier>{4f04c098-6a37-4ea3-ba52-18b698a30919}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GPUController.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="singleHash.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
@@ -31,21 +30,22 @@
     <ClCompile Include="platformDetails.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="crack_single_salted.kernel.cl">
+      <Filter>Kernels</Filter>
+    </None>
     <None Include="hash_multiple.kernel.cl">
       <Filter>Kernels</Filter>
     </None>
     <None Include="hash_single.kernel.cl">
       <Filter>Kernels</Filter>
     </None>
-    <None Include="hash_single_salt.kernel.cl">
-      <Filter>Kernels</Filter>
-    </None>
     <None Include="crack_single.kernel.cl">
       <Filter>Kernels</Filter>
     </None>
-    <None Include="crack_single_salted.kernel.cl">
+    <None Include="sha256.cl">
       <Filter>Kernels</Filter>
     </None>
   </ItemGroup>

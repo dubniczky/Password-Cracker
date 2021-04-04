@@ -148,6 +148,14 @@
 #endif
 #endif // _WIN32
 
+#ifdef WIN64
+#include <windows.h>
+#include <malloc.h>
+#if defined(USE_DX_INTEROP)
+#include <CL/cl_d3d10.h>
+#endif
+#endif // _WIN64
+
 // 
 #if defined(USE_CL_DEVICE_FISSION)
 #include <CL/cl_ext.h>

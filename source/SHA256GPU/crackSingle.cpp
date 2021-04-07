@@ -1,5 +1,7 @@
 #include "GPUController.hpp"
 
+#define _CRT_SECURE_NO_WARNINGS
+
 std::string GPUController::crackSingle(const std::string infileName, const std::string hash)
 {
 	//Redirect if salted
@@ -48,7 +50,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 
 		//Compile kernel
 		printf("Compiling kernel...\n");
-		if (!compileKernel("crack_single.kernel.cl", "sha256crack_single_kernel", command))
+		if (compileKernel("crack_single.kernel.cl", "sha256crack_single_kernel", command) != "")
 		{
 			return std::string();
 		}
@@ -63,7 +65,8 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		char* inputBuffer2 = new char[MAX_KEY_SIZE * threadSize];
 		char* currentBuffer = inputBuffer1;
 		int lineCount = 0;
-		cl::vector<Event> eventQueue;
+		//std::vector<cl::Event> eventQueue;
+		cl::Event event;
 		int i = 0;
 		int previ = 0;
 		char bufferid = 0;
@@ -72,7 +75,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 
 		//Generate buffers			
 		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * threadSize);
-		Buffer resultBuffer = Buffer(context, CL_MEM_WRITE_ONLY, sizeof(int));
+		Buffer resultBuffer = Buffer(context, CL_MEM_ALLOC_HOST_PTR, sizeof(int));
 
 		// Set arguments to kernel
 		kernel.setArg(0, keyBuffer);
@@ -83,6 +86,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		if (!infile)
 		{
 			printf("Infile could not be opened.\n");
+			return std::string();
 		}
 
 		//Start timer
@@ -96,7 +100,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		
 		while (run)
 		{
-			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, &eventQueue);
+			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL);
 			if (bufferid)
 			{
 				bufferid = false;
@@ -111,8 +115,8 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 
 			//Run kernel
 			NDRange _global_(i);
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &eventQueue[0]);
-			queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, sizeof(int), &result, &eventQueue);
+			//std::cout << eventQueue.size();
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &event);
 
 			//Read lines
 			int cline = 0;
@@ -122,8 +126,11 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 			}
    		    if (cline == 0) run = false;
 
+			printf("%u\n", lineCount);
+
 			//Await kernel
-			eventQueue[0].wait();
+			event.wait();
+			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, NULL);
 
 			//Check match
 			if (result > 0) //Step out: match

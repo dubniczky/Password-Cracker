@@ -1,17 +1,20 @@
 #include "GPUController.hpp"
 
-std::string GPUController::singleHash(std::string key)
+std::string GPUController::hashSingle(std::string key)
 {
+	
 	try
 	{
 		//Compile kernel
 		printf("Compiling kernel...\n");
-		if (!compileKernel("hash_single.kernel.cl", "sha256single_kernel"))
+		std::string res; 
+		if ((res = compileKernel("hash_single.kernel.cl", "sha256single_kernel")) != "")
 		{
-			return std::string();
+			return res;
 		}
 		printf("Kernel compiled.\n");
 
+		
 		//Prepare input
 		cl_uint length = key.length();
 		const char* ckey = key.c_str();
@@ -19,6 +22,7 @@ std::string GPUController::singleHash(std::string key)
 		//Create memory buffers
 		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, length);
 		Buffer outBuffer = Buffer(context, CL_MEM_WRITE_ONLY, HASH_CHAR_SIZE);
+		
 
 		//Write data on input buffers
 		queue.enqueueWriteBuffer(keyBuffer, CL_TRUE, 0, length, ckey);
@@ -43,6 +47,6 @@ std::string GPUController::singleHash(std::string key)
 	catch (Error error)
 	{
 		oclPrintError(error);
-		return std::string();
+		return std::string("errors");
 	}
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#define __NO_STD_VECTOR
 #define __CL_ENABLE_EXCEPTIONS
 #define _CRT_SECURE_NO_WARNINGS
 //#define CV_LOG_STRIP_LEVEL CV_LOG_LEVEL_VERBOSE + 1
@@ -26,7 +25,7 @@ private:
 	const size_t MAX_KEY_SIZE = 16 + 1; //16 char, 1 null
 	const size_t HASH_UINT_COUNT = 8;
 	const size_t HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint);
-	const size_t HASH_CHAR_SIZE = (64 * sizeof(char)) + (1 * sizeof(char)); //64: hash, 1: null
+	const size_t HASH_CHAR_SIZE = 65 * sizeof(char); //64: hash + 1: null
 	
 	//Assigned by contructor
 	cl::Platform platform;
@@ -47,20 +46,20 @@ public:
 	GPUController();
 	GPUController(int contextId, int deviceId, int threadSize = 1000);
 
-
-	void platformDetails() const;
 	bool attachDevice(const int contextId = 0, const int deviceId = 0, const int threadSize = 1000);
 
+	void platformDetails() const;
+
 	//Hashing
-	std::string singleHash(std::string key);
-	std::string singleHashSalted(std::string key, std::string salt);
-	unsigned int multiHash(std::string sourceFile, std::string targetFile);
+	std::string hashSingle(std::string key);
+	std::string hashSingleSalted(std::string key, std::string salt);
+	unsigned int hashMultiple(std::string sourceFile, std::string targetFile);
 
 	//Cracking
 	std::string crackSingle(const std::string sourceFile, const std::string hash);
 	std::string crackSingleSalted(std::string sourceFile, std::string hash);
 
 private:
-	bool compileKernel(const std::string fileName, const std::string kernelName, const std::string parameters = "");
+	std::string compileKernel(const std::string fileName, const std::string kernelName, const std::string parameters = "");
 	void hexToDec(const std::string hex, cl_uint* dec) const;
 };

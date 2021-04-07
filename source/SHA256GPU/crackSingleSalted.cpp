@@ -55,7 +55,7 @@ std::string GPUController::crackSingleSalted(std::string infileName, std::string
 	try
 	{
 		printf("Compiling kernel...\n");
-		if (!compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", preproc))
+		if (compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", preproc) != "")
 		{
 			return std::string();
 		}
@@ -73,7 +73,7 @@ std::string GPUController::crackSingleSalted(std::string infileName, std::string
 		char* currentBuffer = inputBuffer1;
 		size_t match = -1;
 		int lineCount = 0;
-		cl::vector<Event> eventQueue;
+		std::vector<Event> eventQueue;
 		int i = 0;
 		int previ = 0;
 		char bufferid = 0;

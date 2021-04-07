@@ -7,42 +7,44 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256CPU", "SHA256CPU\SHA2
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256GPU", "SHA256GPU\SHA256GPU.vcxproj", "{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256GPU Test", "SHA256GPU Test\SHA256GPU Test.vcxproj", "{5D40EA7B-F787-4E05-859D-014887D6C9B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|CPU x64 = Debug|CPU x64
-		Debug|CPU x86 = Debug|CPU x86
 		Debug|GPU x64 = Debug|GPU x64
-		Debug|GPU x86 = Debug|GPU x86
+		Debug|Test x64 = Debug|Test x64
 		Release|CPU x64 = Release|CPU x64
-		Release|CPU x86 = Release|CPU x86
 		Release|GPU x64 = Release|GPU x64
-		Release|GPU x86 = Release|GPU x86
+		Release|Test x64 = Release|Test x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|CPU x64.ActiveCfg = Debug|x64
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|CPU x64.Build.0 = Debug|x64
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|CPU x86.ActiveCfg = Debug|Win32
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|CPU x86.Build.0 = Debug|Win32
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|GPU x64.ActiveCfg = Debug|x64
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|GPU x86.ActiveCfg = Debug|Win32
+		{BC856B90-408A-4503-B45E-7487EDAA4647}.Debug|Test x64.ActiveCfg = Debug|x64
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|CPU x64.ActiveCfg = Release|x64
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|CPU x64.Build.0 = Release|x64
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|CPU x86.ActiveCfg = Release|Win32
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|CPU x86.Build.0 = Release|Win32
 		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|GPU x64.ActiveCfg = Release|x64
-		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|GPU x86.ActiveCfg = Release|Win32
+		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|Test x64.ActiveCfg = Release|x64
+		{BC856B90-408A-4503-B45E-7487EDAA4647}.Release|Test x64.Build.0 = Release|x64
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|CPU x64.ActiveCfg = Debug|x64
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|CPU x86.ActiveCfg = Debug|Win32
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|GPU x64.ActiveCfg = Debug|x64
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|GPU x64.Build.0 = Debug|x64
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|GPU x86.ActiveCfg = Debug|Win32
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|GPU x86.Build.0 = Debug|Win32
+		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Debug|Test x64.ActiveCfg = Debug|x64
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|CPU x64.ActiveCfg = Release|x64
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|CPU x86.ActiveCfg = Release|Win32
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|GPU x64.ActiveCfg = Release|x64
 		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|GPU x64.Build.0 = Release|x64
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|GPU x86.ActiveCfg = Release|Win32
-		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|GPU x86.Build.0 = Release|Win32
+		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|Test x64.ActiveCfg = Release|x64
+		{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}.Release|Test x64.Build.0 = Release|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Debug|CPU x64.ActiveCfg = Debug|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Debug|GPU x64.ActiveCfg = Debug|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Debug|Test x64.ActiveCfg = Debug|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Debug|Test x64.Build.0 = Debug|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Release|CPU x64.ActiveCfg = Release|Win32
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Release|GPU x64.ActiveCfg = Release|Win32
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Release|Test x64.ActiveCfg = Release|x64
+		{5D40EA7B-F787-4E05-859D-014887D6C9B0}.Release|Test x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

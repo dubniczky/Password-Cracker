@@ -26,15 +26,17 @@ crack single ../../passwords/passwords-100.txt fc9h6fsd1503052662d44b5f4aecd5201
 crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa89cd889a4fccc6fe916a66dcd497ecc4c182a2
 */
 
-#include "GPUController.hpp"
-#include <string>
-#include <stdio.h>
-#include <numeric>
-
 //Test
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
+
+#include "GPUController.hpp"
+#include "MainCommandRelay.hpp"
+#include <string>
+#include <stdio.h>
+#include <numeric>
+
 
 //Link
 #pragma comment(lib, "OpenCL.lib")
@@ -43,104 +45,8 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 //Main
 int main(int argc, char* argv[])
 {
-	GPUController* gpuc;
+	MainCommandRelay::relay(argc, argv);
 
-	//No arguments
-	if (argc == 1)
-	{
-		printf("platform                                    : list platforms\n");
-		printf("hash single <password>                      : hash a single password\n");
-		printf("hash single <password> <salt>               : hash a single password with salt\n");
-		printf("hash multiple <dictionary.txt> <output.txt> : hash multiple passwords\n");
-		printf("crack single <dictionary.txt> <hash>        : hash multiple passwords\n");
-		return 0;
-	}
-
-	//Platform
-	if (strcmp(argv[1], "platform") == 0)
-	{
-		gpuc = new GPUController();
-		gpuc->platformDetails();
-	}
-	//Hash
-	else if (strcmp(argv[1], "hash") == 0)
-	{
-		if (argc < 3)
-		{
-			printf("single or multiple\n");
-			return 0;
-		}
-
-		if (strcmp(argv[2], "single") == 0)
-		{
-			if (argc < 4)
-			{
-				printf("<password>\n");
-				return 0;
-			}
-
-			if (argc < 5)
-			{
-				std::string key(argv[3]);
-				gpuc = new GPUController();
-				gpuc->attachDevice();
-				gpuc->singleHash(key);
-			}
-			else
-			{
-				std::string key(argv[3]);
-				std::string salt(argv[4]);
-				gpuc = new GPUController();
-				gpuc->attachDevice();
-				gpuc->singleHashSalted(key, salt);
-			}
-		}
-		else if (strcmp(argv[2], "multiple") == 0)
-		{
-			if (argc < 5)
-			{
-				printf("<input.txt> <output.txt>\n");
-				return 0;
-			}
-			else
-			{
-				std::string infile(argv[3]);
-				std::string outfile(argv[4]);
-
-				gpuc = new GPUController();
-				gpuc->multiHash(infile, outfile);
-			}
-		}
-		else
-		{
-			printf("single or multiple\n");
-			return 0;
-		}
-	}
-	//Crack
-	else if (strcmp(argv[1], "crack") == 0)
-	{
-		if (argc < 3)
-		{
-			printf("single or multiple\n");
-			return 0;
-		}
-
-		if (strcmp(argv[2], "single") == 0)
-		{
-			if (argc < 5)
-			{
-				printf("<dictionary.txt> <hash>\n");
-				return 0;
-			}
-
-			std::string sourceFile(argv[3]);
-			std::string hash(argv[4]);
-			gpuc = new GPUController();
-			gpuc->attachDevice();
-			gpuc->crackSingle(sourceFile, hash); //Salt will be used if included
-		}
-	}
-
+	_CrtDumpMemoryLeaks();
 	return 0;
 }

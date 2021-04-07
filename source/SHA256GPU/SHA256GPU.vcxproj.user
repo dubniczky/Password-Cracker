@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>hash single banana</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-100k.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|Win32'">
@@ -9,7 +9,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-100k.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>hash single banana</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|x64'">
@@ -17,7 +17,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-100.txt b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-4m.txt 59557cf1890bf0b7458c1e66119ab01c3a796fd09df296ef7e70745d29934777</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release CPU|x64'">

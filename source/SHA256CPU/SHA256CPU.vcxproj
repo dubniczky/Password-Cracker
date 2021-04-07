@@ -140,6 +140,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <TargetName>sha256cpu</TargetName>
+    <OutDir>$(SolutionDir)build\bin\cpu-debug</OutDir>
+    <IntDir>$(SolutionDir)build\obj\cpu-debug</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -153,6 +155,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)build\bin\cpu-release</OutDir>
+    <IntDir>$(SolutionDir)build\obj\cpu-release</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release CPU|x64'">
     <LinkIncremental>false</LinkIncremental>

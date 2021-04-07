@@ -7,12 +7,12 @@ void GPUController::platformDetails() const
 		std::cout << "Use the given device ID of the graphics controller to specify the cracking device." << std::endl;
 
 		// Get available platforms
-		vector<Platform> platforms;
+		std::vector<Platform> platforms;
 		Platform::get(&platforms);
 
 		std::cout << "Platforms: " << platforms.size() << std::endl << std::endl;
 
-		vector<Device> devices;
+		std::vector<Device> devices;
 		Context context;
 
 		int platformID = -1;

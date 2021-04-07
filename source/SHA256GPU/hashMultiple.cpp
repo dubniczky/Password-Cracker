@@ -1,12 +1,14 @@
 #include "GPUController.hpp"
 
-unsigned int GPUController::multiHash(std::string infileName, std::string outfileName)
+#define _CRT_SECURE_NO_WARNINGS
+
+unsigned int GPUController::hashMultiple(std::string infileName, std::string outfileName)
 {
 	int hashThreadCount = threadSize;
 	try
 	{
 		printf("Compiling kernel...\n");
-		if (!compileKernel("hash_multiple.kernel.cl", "sha256hash_multiple_kernel"))
+		if (compileKernel("hash_multiple.kernel.cl", "sha256hash_multiple_kernel") != "")
 		{
 			return 0;
 		}

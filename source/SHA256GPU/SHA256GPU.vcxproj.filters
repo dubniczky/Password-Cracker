@@ -12,15 +12,6 @@
     <ClCompile Include="GPUController.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
-    <ClCompile Include="singleHash.cpp">
-      <Filter>GPUController</Filter>
-    </ClCompile>
-    <ClCompile Include="singleHashSalted.cpp">
-      <Filter>GPUController</Filter>
-    </ClCompile>
-    <ClCompile Include="multiHash.cpp">
-      <Filter>GPUController</Filter>
-    </ClCompile>
     <ClCompile Include="crackSingle.cpp">
       <Filter>GPUController</Filter>
     </ClCompile>
@@ -31,6 +22,15 @@
       <Filter>GPUController</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="hashSingle.cpp">
+      <Filter>GPUController</Filter>
+    </ClCompile>
+    <ClCompile Include="hashSingleSalted.cpp">
+      <Filter>GPUController</Filter>
+    </ClCompile>
+    <ClCompile Include="hashMultiple.cpp">
+      <Filter>GPUController</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="crack_single_salted.kernel.cl">
@@ -53,5 +53,7 @@
     <ClInclude Include="GPUController.hpp">
       <Filter>GPUController</Filter>
     </ClInclude>
+    <ClInclude Include="LinkedList.hpp" />
+    <ClInclude Include="MainCommandRelay.hpp" />
   </ItemGroup>
 </Project>

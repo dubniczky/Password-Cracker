@@ -1,14 +1,17 @@
 #include "GPUController.hpp"
 
-GPUController::GPUController() : platformId(0), deviceId(0), threadSize(1024)
+//Construct
+GPUController::GPUController() : platformId(0), deviceId(0), threadSize(22400)
 {
 	
 }
 GPUController::GPUController(int platformId, int deviceId, int threadSize)
+	: platformId(platformId), deviceId(deviceId), threadSize(threadSize)
 {
-	this->attachDevice(platformId, deviceId, threadSize);
+	
 }
 
+//Initialize
 bool GPUController::attachDevice(const int platformId, const int deviceId, const int threadSize)
 {
 	//Guard
@@ -18,8 +21,8 @@ bool GPUController::attachDevice(const int platformId, const int deviceId, const
 
 
 	//Get device
-	cl::vector<cl::Platform> platforms;
-	cl::vector<cl::Device> devices;
+	std::vector<cl::Platform> platforms;
+	std::vector<cl::Device> devices;
 	Context context;
 
 
@@ -57,11 +60,10 @@ bool GPUController::attachDevice(const int platformId, const int deviceId, const
 	this->context = context;
 	this->queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
 
-	std::cout << "Device Attached: (" << platformId << ":" << deviceId << ")" << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	std::cout << "Device Attached: (" << platformId << ":" << deviceId << ") " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	return true;
 }
-
-
-bool GPUController::compileKernel(const std::string fileName, const std::string kernelName, const std::string params)
+std::string GPUController::compileKernel(const std::string fileName, const std::string kernelName, const std::string params)
 {
 	try
 	{
@@ -85,16 +87,17 @@ bool GPUController::compileKernel(const std::string fileName, const std::string 
 		Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 
 		//Compile
-		cl::vector<cl::Device> devices;
+		std::vector<cl::Device> devices;
 		devices.push_back(this->device);
-		this->program = Program(context, source);
+		this->program = Program(this->context, source);
 		this->program.build(devices, params.c_str());
 		this->kernel = Kernel(this->program, kernelName.c_str());
-		return true;
+		return std::string("");
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		std::string buildlog;
 		if (error.err() == CL_BUILD_PROGRAM_FAILURE)
 		{
 			// Check the build status
@@ -102,18 +105,20 @@ bool GPUController::compileKernel(const std::string fileName, const std::string 
 
 			// Get the build log
 			std::string name = this->device.getInfo<CL_DEVICE_NAME>();
-			std::string buildlog = this->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(this->device);
+			buildlog = this->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(this->device);
 			std::cerr << "Build log for " << name << ":" << std::endl
 				<< buildlog << std::endl;
 		}
-		return false;
+		return std::string(buildlog);
 	}
-	return false;
+	return std::string("");
 }
+
+//Utilities
 void GPUController::hexToDec(const std::string hex, cl_uint* dec) const
 {
-	#pragma unroll
 	std::stringstream ss;
+	#pragma unroll
 	for (size_t i = 0; i < 8; i++)
 	{
 		ss << std::hex << hex.substr(i * 8, 8);

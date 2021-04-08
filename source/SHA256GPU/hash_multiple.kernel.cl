@@ -9,7 +9,7 @@
 #include "sha256.cl"
 
 //Kernel
-kernel void sha256hash_multiple_kernel(uint keyLength global uchar* key, global char* result)
+kernel void sha256hash_multiple_kernel(uint keyLength, global uchar* keys, global char* result)
 {
     //Initialize
     int qua; //Message schedule step modulus
@@ -35,9 +35,9 @@ kernel void sha256hash_multiple_kernel(uint keyLength global uchar* key, global 
 
     //Get key
     globalID = get_global_id(0);
-    key = keys + globalID * KEY_LENGTH; //Get pointer to key string
+    key = keys + globalID * keyLength; //Get pointer to key string
 
-    for (length = 0; length < KEY_LENGTH && (key[length] != 0 && key[length] != '\n'); length++) { }
+    for (length = 0; length < keyLength && (key[length] != 0 && key[length] != '\n'); length++) { }
     key[length] = 0;
 
 
@@ -122,7 +122,7 @@ kernel void sha256hash_multiple_kernel(uint keyLength global uchar* key, global 
     W[6] = G + H6;
     W[7] = H + H7;
 
-
+    
     //Convert uints to hex char array
     char hex_charset[] = "0123456789abcdef";
     #pragma unroll
@@ -131,8 +131,9 @@ kernel void sha256hash_multiple_kernel(uint keyLength global uchar* key, global 
         #pragma unroll
         for (int len = 8-1; len >= 0; W[j] >>= 4, --len)
         {
-            result[(globalID * keyLength)(j * 8) + len] = hex_charset[ W[j] & 0xf ];
+            result[(globalID * 65) + (j * 8) + len] = hex_charset[ W[j] & 0xf ];
         }
     }
-    result[64] = 0;
+    result[(globalID * 65) + 64] = '\n';
+    //printf("%s %u\n", &result[(globalID * 65)], globalID);
 }

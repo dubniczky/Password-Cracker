@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29911.84
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256CPU", "SHA256CPU\SHA256CPU.vcxproj", "{BC856B90-408A-4503-B45E-7487EDAA4647}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sha256cpu", "sha256cpu\sha256cpu.vcxproj", "{BC856B90-408A-4503-B45E-7487EDAA4647}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256GPU", "SHA256GPU\SHA256GPU.vcxproj", "{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sha256gpu", "sha256gpu\sha256gpu.vcxproj", "{0A026F82-A7AC-4A3F-AEBE-A11F16FC0008}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SHA256GPU Test", "SHA256GPU Test\SHA256GPU Test.vcxproj", "{5D40EA7B-F787-4E05-859D-014887D6C9B0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sha256gpu-test", "sha256gpu-test\sha256gpu-test.vcxproj", "{5D40EA7B-F787-4E05-859D-014887D6C9B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

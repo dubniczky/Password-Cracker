@@ -4,6 +4,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 //#define CV_LOG_STRIP_LEVEL CV_LOG_LEVEL_VERBOSE + 1
 
+//Base
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -11,21 +12,24 @@
 #include <chrono>
 #include <cstdio>
 
+//OpenCL
 #include <CL/cl.hpp>
 #include <oclutils.hpp>
 
-using cl::vector;
+//Namespaces
 using namespace cl;
 using namespace std::chrono;
+
+
 
 class GPUController
 {
 private:
 	//Constants
-	const size_t MAX_KEY_SIZE = 16 + 1; //16 char, 1 null
-	const size_t HASH_UINT_COUNT = 8;
-	const size_t HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint);
-	const size_t HASH_CHAR_SIZE = 65 * sizeof(char); //64: hash + 1: null
+	const size_t MAX_KEY_SIZE = 24 + 1; //24: char, 1: (c string null)
+	const size_t HASH_UINT_COUNT = 8; //256 bit / 32 bit ints
+	const size_t HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint); //byte size of hash uints array
+	const size_t HASH_CHAR_SIZE = 65 * sizeof(char); //64: (hash) + 1: (c string null)
 	
 	//Assigned by contructor
 	cl::Platform platform;
@@ -48,7 +52,7 @@ public:
 
 	bool attachDevice(const int contextId = 0, const int deviceId = 0, const int threadSize = 1000);
 
-	void platformDetails() const;
+	std::string platformDetails() const;
 
 	//Hashing
 	std::string hashSingle(std::string key);

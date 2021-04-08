@@ -26,16 +26,24 @@ crack single ../../passwords/passwords-100.txt fc9h6fsd1503052662d44b5f4aecd5201
 crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa89cd889a4fccc6fe916a66dcd497ecc4c182a2
 */
 
-//Test
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
 
-#include "GPUController.hpp"
-#include "MainCommandRelay.hpp"
+//Test
+#ifdef _DEBUG
+	#define _CRTDBG_MAP_ALLOC
+	#include <stdlib.h>
+	#include <crtdbg.h>
+#endif // _DEBUG
+
+
+//Base
 #include <string>
 #include <stdio.h>
 #include <numeric>
+
+
+//Project
+#include "GPUController.hpp"
+#include "MainCommandRelay.hpp"
 
 
 //Link
@@ -45,8 +53,11 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 //Main
 int main(int argc, char* argv[])
 {
-	MainCommandRelay::relay(argc, argv);
+	int result = MainCommandRelay::relay(argc, argv);	
 
-	_CrtDumpMemoryLeaks();
-	return 0;
+	#ifdef _DEBUG
+		_CrtDumpMemoryLeaks();
+	#endif //_DEBUG
+
+	return result;
 }

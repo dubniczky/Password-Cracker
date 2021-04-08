@@ -1,21 +1,29 @@
 #include "GPUController.hpp"
 
-void GPUController::platformDetails() const
+std::string GPUController::platformDetails() const
 {
 	try
 	{
-		std::cout << "Use the given device ID of the graphics controller to specify the cracking device." << std::endl;
-
 		// Get available platforms
 		std::vector<Platform> platforms;
 		Platform::get(&platforms);
 
-		std::cout << "Platforms: " << platforms.size() << std::endl << std::endl;
+		if (platforms.size() == 0)
+		{
+			std::cout << "No device platforms detected." << std::endl << std::endl;
+			return "No platforms.";
+		}
+		else
+		{
+			std::cout << "Use the given device ID of the graphics controller to specify the cracking device." << std::endl;
+			std::cout << "Platforms: " << platforms.size() << std::endl << std::endl;
+		}
 
 		std::vector<Device> devices;
 		Context context;
-
 		int platformID = -1;
+
+
 		for (Platform p : platforms)
 		{
 			try
@@ -25,7 +33,6 @@ void GPUController::platformDetails() const
 				std::cout << "\t" << p.getInfo<CL_PLATFORM_VERSION>() << std::endl;
 
 				// Select the default platform and create a context using this platform and the GPU
-				// These are key-value pairs.
 				cl_context_properties cps[3] =
 				{
 					CL_CONTEXT_PLATFORM,
@@ -60,6 +67,7 @@ void GPUController::platformDetails() const
 			}
 			catch (Error error)
 			{
+				std::cout << "Error while loading device." << std::endl;
 				oclPrintError(error);
 			}
 			
@@ -67,12 +75,13 @@ void GPUController::platformDetails() const
 
 		if (devices.size() == 0)
 		{
-			throw Error(CL_INVALID_CONTEXT, "Failed to create a valid context!");
+			throw Error(CL_INVALID_CONTEXT, "Failed to create a valid context!");			
 		}
 
 	}
 	catch (Error error)
 	{
 		oclPrintError(error);
+		return std::string(error.what());
 	}
 }

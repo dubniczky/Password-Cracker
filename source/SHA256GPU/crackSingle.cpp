@@ -48,46 +48,51 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%d",
 				hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE);
 
+
 		//Compile kernel
 		printf("Compiling kernel...\n");
 		if (compileKernel("crack_single.kernel.cl", "sha256crack_single_kernel", command) != "")
 		{
-			return std::string();
+			return std::string("Error while compiling kernel.");
 		}
 		printf("Kernel compiled.\n");
+
+
+		//Open file
+		FILE* infile = fopen(infileName.c_str(), "r");
+		if (!infile)
+		{
+			printf("File could not be opened.\n");
+			return std::string("File could not be opened.");
+		}
 
 
 		//Initialize local variables
 		printf("Initializing kernel...\n");
 		unsigned int hashThreadCount = threadSize;
 		unsigned int result = 0;
-		char* inputBuffer1 = new char[MAX_KEY_SIZE * threadSize];
-		char* inputBuffer2 = new char[MAX_KEY_SIZE * threadSize];
-		char* currentBuffer = inputBuffer1;
-		int lineCount = 0;
-		//std::vector<cl::Event> eventQueue;
 		cl::Event event;
-		int i = 0;
-		int previ = 0;
-		char bufferid = 0;
+		unsigned int lineCount = 0;		
+		unsigned int i = 0;
+		unsigned int previ = 0;
+		bool bufferid = 0;
 		bool run = true;
 
 
-		//Generate buffers			
+		//Generate buffers	
+		char* inputBuffers[2];
+		inputBuffers[0] = new char[MAX_KEY_SIZE * threadSize];
+		inputBuffers[1] = new char[MAX_KEY_SIZE * threadSize];
+		char* currentBuffer = inputBuffers[0];
+
 		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * threadSize);
 		Buffer resultBuffer = Buffer(context, CL_MEM_ALLOC_HOST_PTR, sizeof(int));
+
 
 		// Set arguments to kernel
 		kernel.setArg(0, keyBuffer);
 		kernel.setArg(1, resultBuffer);
-
-		//Open file
-		FILE* infile = fopen(infileName.c_str(), "r");
-		if (!infile)
-		{
-			printf("Infile could not be opened.\n");
-			return std::string();
-		}
+		
 
 		//Start timer
 		auto startTime = high_resolution_clock::now();
@@ -101,32 +106,25 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		while (run)
 		{
 			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL);
-			if (bufferid)
-			{
-				bufferid = false;
-				currentBuffer = inputBuffer1;
-			}
-			else
-			{
-				bufferid = true;
-				currentBuffer = inputBuffer2;
-			}
+
+
+			//Swap buffers
+			bufferid = (bufferid + 1) % 2;
+			currentBuffer = inputBuffers[bufferid];
 			
 
 			//Run kernel
 			NDRange _global_(i);
-			//std::cout << eventQueue.size();
 			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &event);
 
 			//Read lines
-			int cline = 0;
+			unsigned int cline = 0;
 			for (; cline < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * cline], MAX_KEY_SIZE, infile); cline++)
 			{
 
 			}
    		    if (cline == 0) run = false;
 
-			printf("%u\n", lineCount);
 
 			//Await kernel
 			event.wait();
@@ -141,12 +139,13 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 			else //Step over: no match
 			{
 				lineCount += i;
-				i = cline;							
+				i = cline;
+				printf("%u\n", lineCount);
 			}			
 		}
 
 		auto stopTime = high_resolution_clock::now();
-		auto duration = duration_cast<microseconds>(stopTime - startTime);
+		auto duration = std::chrono::duration_cast<microseconds>(stopTime - startTime);
 
 		fclose(infile);
 
@@ -162,8 +161,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		else
 		{
 			//Get result 
-			char* res = (bufferid) ? &inputBuffer1[(result - 1) * MAX_KEY_SIZE]
-				                   : &inputBuffer2[(result - 1) * MAX_KEY_SIZE];
+			char* res = &inputBuffers[!bufferid][(result - 1) * MAX_KEY_SIZE];
 			
 			//Remove line break
 			for (int i = 0; i < MAX_KEY_SIZE; i++)
@@ -182,9 +180,14 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 			printf("Line: %d\n===============\n", lineCount);
 		}
 		
-		long micro = (long)duration.count();
+		long long micro = (long)duration.count();
 		printf("Runtime: %lu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
+
+		//Cleanup
+		delete[] inputBuffers[0];
+		delete[] inputBuffers[1];
+
 		return outString;
 	}
 	catch (Error error)

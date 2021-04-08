@@ -1,25 +1,29 @@
+//
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <string>
 
-#include "CppUnitTest.h"
-#include "../SHA256GPU/GPUController.cpp"
-#include "../SHA256GPU/hashSingle.cpp"
-#include "../SHA256GPU/hashMultiple.cpp"
-#include "../SHA256GPU/hashSingleSalted.cpp"
-#include "../SHA256GPU/crackSingle.cpp"
-#include "../SHA256GPU/crackSingleSalted.cpp"
-#include "../SHA256GPU/platformDetails.cpp"
 
-#include <process.h>
+//Project imports
+#include "CppUnitTest.h"
+#include "../sha256gpu/GPUController.cpp"
+#include "../sha256gpu/hashSingle.cpp"
+#include "../sha256gpu/hashMultiple.cpp"
+#include "../sha256gpu/hashSingleSalted.cpp"
+#include "../sha256gpu/crackSingle.cpp"
+#include "../sha256gpu/crackSingleSalted.cpp"
+#include "../sha256gpu/platformDetails.cpp"
+
 
 #pragma comment(lib, "OpenCL.lib")
+
 
 #define KERNEL_DIR "../../../SHA256GPU/"
 
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+using Assert = Microsoft::VisualStudio::CppUnitTestFramework::Assert;
+
 
 namespace SHA256GPUTest
 {

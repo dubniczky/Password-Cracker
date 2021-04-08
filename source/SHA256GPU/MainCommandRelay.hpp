@@ -143,7 +143,7 @@ private:
 
 		//Run
 		std::vector<std::string> arg;
-		args.getAll(arg);
+		args.dump(arg);
 		GPUController* gpuc = new GPUController();
 		gpuc->attachDevice();
 		
@@ -178,7 +178,7 @@ private:
 
 		//Run
 		std::vector<std::string> arg;
-		args.getAll(arg);
+		args.dump(arg);
 
 		auto gpuc = new GPUController();
 		gpuc->attachDevice();
@@ -205,7 +205,7 @@ private:
 
 		//Run
 		std::vector<std::string> arg;
-		args.getAll(arg);
+		args.dump(arg);
 		GPUController* gpuc = new GPUController();
 		gpuc->attachDevice();
 		gpuc->crackSingle(arg[0], arg[1]);

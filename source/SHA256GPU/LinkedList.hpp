@@ -29,12 +29,12 @@ public:
 		}
 	}
 
-	void getAll(std::vector<T>* v) const
+	void dump(std::vector<T>* v) const
 	{
 		v->push_back(arg);
 		if (next != nullptr)
 		{
-			next->getAll(v);
+			next->dump(v);
 		}
 	}
 };
@@ -89,7 +89,7 @@ public:
 	//Query
 	T get() const
 	{
-		return start->arg;
+		return (start == nullptr) ? T("") : start->arg;
 	}
 	int count() const
 	{
@@ -100,10 +100,10 @@ public:
 		if (start == nullptr) return false;
 		else return s == start->arg;
 	}
-	void getAll(std::vector<T>& v) const
+	void dump(std::vector<T>& v) const
 	{
 		if (start == nullptr) return;
 
-		start->getAll(&v);
+		start->dump(&v);
 	}
 };

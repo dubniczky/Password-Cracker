@@ -1,11 +1,11 @@
-//
+//Base imports
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <string>
 
 
-//Project imports
+//Local imports
 #include "CppUnitTest.h"
 #include "../sha256gpu/GPUController.cpp"
 #include "../sha256gpu/hashSingle.cpp"
@@ -14,10 +14,9 @@
 #include "../sha256gpu/crackSingle.cpp"
 #include "../sha256gpu/crackSingleSalted.cpp"
 #include "../sha256gpu/platformDetails.cpp"
-
+#include "../sha256gpu/LinkedList.hpp"
 
 #pragma comment(lib, "OpenCL.lib")
-
 
 #define KERNEL_DIR "../../../SHA256GPU/"
 
@@ -25,12 +24,12 @@
 using Assert = Microsoft::VisualStudio::CppUnitTestFramework::Assert;
 
 
-namespace SHA256GPUTest
+namespace tests
 {
 	TEST_CLASS(GPUControllerTest)
 	{
 	public:
-		
+
 		TEST_METHOD(CopyKernels)
 		{
 			auto copy = [](std::string name)
@@ -58,7 +57,7 @@ namespace SHA256GPUTest
 			//Load
 			GPUController* gc = new GPUController();
 			gc->attachDevice();
-			
+
 			//Hash
 			Assert::AreEqual(std::string("b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"), gc->hashSingle("banana"));
 			Assert::AreEqual(std::string("c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35"), gc->hashSingle("encloses"));
@@ -86,19 +85,103 @@ namespace SHA256GPUTest
 			//Crack
 			std::string pass100k = "../../../../passwords/passwords-100k.txt";
 			Assert::AreEqual(std::string("banana"),
-				             gc->crackSingle(pass100k, "b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"));
+				gc->crackSingle(pass100k, "b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"));
 			Assert::AreEqual(std::string("encloses"),
-							 gc->crackSingle(pass100k, "c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35"));
+				gc->crackSingle(pass100k, "c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35"));
 			Assert::AreEqual(std::string("12345"),
-						 	 gc->crackSingle(pass100k, "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"));
+				gc->crackSingle(pass100k, "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"));
 
 			//Missing from passwords list (vizslakutya) hash
 			Assert::AreEqual(std::string(""),
-							 gc->crackSingle(pass100k, "1b72955fcf8258e459e16961bde674e7a364b4d85bce939eea774dd7250de06a"));
+				gc->crackSingle(pass100k, "1b72955fcf8258e459e16961bde674e7a364b4d85bce939eea774dd7250de06a"));
+		}
+	};
 
-			//File not found
+
+
+	TEST_CLASS(LinkedListTest)
+	{
+	public:
+
+		TEST_METHOD(Creating)
+		{
+			LinkedList<std::string>* ll = new LinkedList<std::string>();
+			Assert::IsNotNull(ll);
+
+			delete ll;
+		}
+
+		TEST_METHOD(Filling)
+		{
+			LinkedList<std::string>* ll = new LinkedList<std::string>();
+
+			ll->add("a");
+			ll->add("b");
+			ll->add("c");
+			Assert::IsTrue(ll->first("a"));
+			Assert::AreEqual(3, ll->count());
+
+			delete ll;
+		}
+
+		TEST_METHOD(Popping)
+		{
+			LinkedList<std::string>* ll = new LinkedList<std::string>();
+
+			ll->add("x");
+			ll->add("y");
+			ll->add("z");
+
+			Assert::AreEqual(std::string("x"), ll->get());
+			ll->pop();
+			Assert::AreEqual(std::string("y"), ll->get());
+			ll->pop();
+			Assert::AreEqual(std::string("z"), ll->get());
+			ll->pop();
+			Assert::AreEqual(std::string(""), ll->get());
+
+			Assert::AreEqual(0, ll->count());
+
+			delete ll;
+		}
+
+		TEST_METHOD(Exporting)
+		{
+			LinkedList<std::string>* ll = new LinkedList<std::string>();
+
+			ll->add("a");
+			ll->add("b");
+			ll->add("c");
+
+			std::vector<std::string> out;
+			ll->dump(out);
+			Assert::AreEqual((size_t)3, out.size());
+
+			Assert::AreEqual(std::string("a"), out[0]);
+			Assert::AreEqual(std::string("b"), out[1]);
+			Assert::AreEqual(std::string("c"), out[2]);
+
+			delete ll;
+		}
+
+		TEST_METHOD(CrackSingle)
+		{
+			//Load
+			GPUController* gc = new GPUController();
+			gc->attachDevice();
+
+			//Crack
+			std::string pass100k = "../../../../passwords/passwords-100k.txt";
+			Assert::AreEqual(std::string("banana"),
+				gc->crackSingle(pass100k, "b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"));
+			Assert::AreEqual(std::string("encloses"),
+				gc->crackSingle(pass100k, "c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35"));
+			Assert::AreEqual(std::string("12345"),
+				gc->crackSingle(pass100k, "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"));
+
+			//Missing from passwords list (vizslakutya) hash
 			Assert::AreEqual(std::string(""),
-				gc->crackSingle("nonexistent.txt", "1b72955fcf8258e459e16961bde674e7a364b4d85bce939eea774dd7250de06a"));
+				gc->crackSingle(pass100k, "1b72955fcf8258e459e16961bde674e7a364b4d85bce939eea774dd7250de06a"));
 		}
 	};
 }

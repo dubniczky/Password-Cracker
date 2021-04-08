@@ -1,6 +1,5 @@
 #include "GPUController.hpp"
 
-#define _CRT_SECURE_NO_WARNINGS
 
 std::string GPUController::crackSingle(const std::string infileName, const std::string hash)
 {
@@ -44,7 +43,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 	{
 		//Generate compiler command
 		char command[256];
-		sprintf(command,
+		sprintf_s(command,
 				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%d",
 				hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE);
 

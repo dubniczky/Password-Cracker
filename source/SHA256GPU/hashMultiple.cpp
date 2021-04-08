@@ -74,7 +74,7 @@ unsigned int GPUController::hashMultiple(std::string infileName, std::string out
 		auto startTime = high_resolution_clock::now();
 
 		
-		for (; i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * i], MAX_KEY_SIZE, infile) != NULL; i++)
+		for (; i < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * (size_t)i], MAX_KEY_SIZE, infile) != NULL; i++)
 		{
 
 		}

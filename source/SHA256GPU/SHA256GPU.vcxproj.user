@@ -9,7 +9,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>hash multiple ../../passwords/passwords-100k.txt hashes.txt</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-100k.txt asdf7d9d10127d2c1a49684e2d2f258e1dc1ccf05649b5690dd55c311afe9ad16441</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|x64'">
@@ -17,7 +17,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-4m.txt 59557cf1890bf0b7458c1e66119ab01c3a796fd09df296ef7e70745d29934777</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>crack single ../../passwords/passwords-4m.txt salty8d2b8da91ff28558d835c17ef91c07000bc58896ef7b98710c18dea92afb836f</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release CPU|x64'">

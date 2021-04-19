@@ -3,6 +3,8 @@
 Hashing:
 ../../passwords/passwords-100k.txt hashes.txt
 
+Cracking:
+../../passwords/passwords-4m.txt 8d2b8da91ff28558d835c17ef91c07000bc58896ef7b98710c18dea92afb836f salty
 
 
 */
@@ -13,6 +15,7 @@ Hashing:
 #include <chrono>
 #include <vector>
 #include <string>
+#include <map>
 
 #include "sha256.hpp"
 
@@ -50,44 +53,24 @@ int hashKeys(std::string inFile, std::string outFile)
     delete context;
     return 0;
 }
-int crackKey(std::string file, std::string hash, unsigned int batchSize = 1000)
+int crackKeySalted(std::string file, std::string hash, std::string salt)
 {
-    /*
-    //Read target
-    string targetFile = argv[1];
-    string target = readFile(targetFile);
-    printf("Target: '%s'\n", target.c_str());
-    if (target.length() < 64)
-    {
-        printf("Hash must be at lease 64 characters long\n");
-        return 2;
-    }
-    int saltSize = target.length() - 64;
-    string salt = target.substr(0, saltSize);
-    string hash = target.substr(saltSize, hashSize);
+    std::cout << "Cracking..." << std::endl;
 
-    printf("Salt: '%s'\n", salt.c_str());
-    printf("Hash: '%s'\n", hash.c_str());
-
-    //Reading password table
-    printf("Reading password table...\n");
-    vector<string> passTable;
-    string tableFile = argv[2];
-    string current;
-    for (ifstream input(tableFile); getline(input, current);)
-    {
-        passTable.push_back(current);
-    }
-
-    //Matching
-    printf("Matching...");
     auto startTime = high_resolution_clock::now();
+    std::ifstream infile(file);
+    sha256* context = new sha256();
+    context->storedHash = hash;
+
+    std::string key;
     bool match = false;
-    int index;
-    for (index = 0; index < (int)passTable.size(); index++)
+    for (; getline(infile, key) ;)
     {
-        string chash = sha256(passTable[index] + salt);
-        if (hash == chash) break;
+        if (context->verify(key.length() + salt.length(), key + salt))
+        {
+            match = true;
+            break;
+        }        
     }
 
     //Measure length
@@ -95,21 +78,19 @@ int crackKey(std::string file, std::string hash, unsigned int batchSize = 1000)
     auto duration = duration_cast<microseconds>(stopTime - startTime);
     long long microseconds = duration.count();
 
-    //Check result
-    if (index < (int)passTable.size())
+    std::cout << "Cracking completed." << std::endl;
+    std::cout << "Time: " << microseconds << " microseconds" << std::endl;
+
+    if (match)
     {
-        printf("\nMatch found: %s\n", passTable[index].c_str());
-        printf("Checked lines: %i\n", index + 1);
-        printf("Search time: %lld microseconds\n", microseconds);
+        std::cout << "Match found:" << std::endl << key << std::endl;
     }
     else
     {
-        printf("\nMatch not found\n");
-        printf("Checked lines: %i\n", index);
-        printf("Search time: %lld microseconds\n", microseconds);
+        std::cout << "Match not found." << std::endl;
     }
-    */
 
+    delete context;
     return 0;
 }
 
@@ -123,10 +104,10 @@ int main(int argc, char* argv[])
     }
     if (argc == 4)
     {
-        return crackKey(argv[1], argv[2], std::stoi(argv[3]));
+        return crackKeySalted(argv[1], argv[2], argv[3]);
     }
     
     std::cout << "Invalid parameters." << std::endl <<
                  "<infile> <outfile>" << std::endl <<
-                 "<infile> <hash> <batch-size>" << std::endl;
+                 "<infile> <hash> <salt>" << std::endl;
 }

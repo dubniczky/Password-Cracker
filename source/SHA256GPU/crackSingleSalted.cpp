@@ -1,90 +1,97 @@
 ﻿#include "GPUController.hpp"
 
-std::string GPUController::crackSingleSalted(std::string infileName, std::string hash)
+std::string GPUController::crackSingleSalted(std::string infileName, std::string saltHash)
 {
+	//Separate salt and hash
+	unsigned int saltLength = saltHash.length() - 64;
+	std::string salt = saltHash.substr(0, saltLength);
+	std::string hash = saltHash.substr(saltLength, 64);
+	const char* csalt = salt.c_str();
+	const char* chash = hash.c_str();
+
+
 	//Write hash
 	printf("Input: %s\n", hash.c_str());
+	printf("Hash: %s\n", hash.c_str());
+	printf("Salt: %s\n", salt.c_str());
 
-	//Calc salt
-	int saltLength = hash.length() - 64;
-	printf("Salt length: %d\n", saltLength);
-	char* salt = new char[saltLength + 1];
-	memcpy(salt, hash.c_str(), saltLength);
-	salt[saltLength] = 0;
-	printf("Salt: %s\n", salt);
 
-	char hashc[65];
-	memcpy(hashc, hash.c_str() + saltLength, 65);
-
-	//Write hexform
+	//Print hexadecimal form	
 	printf("Hash hexform: [ ");
-	#pragma unroll
-	for (int i = 0; i < HASH_UINT_COUNT; i++)
+	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
-		printf("'%.8s', ", &hashc[i * 8]);
-		if (i == HASH_UINT_COUNT - 1) printf("'%.8s' ", &hashc[i * 8]);
+		printf("'%.8s', ", &chash[i * 8]);
 	}
-	printf("]\n");
+	printf("'%.8s' ]\n", &chash[(HASH_UINT_COUNT - 1) * 8]);
 
-	//Write Decform
+
+	//Print decimal form
 	cl_uint hashDec[8];
 	hexToDec(hash, hashDec);
 	printf("Hash decform: [ ");
-	#pragma unroll
-	for (int i = 0; i < HASH_UINT_COUNT; i++)
+	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
 		printf("%u, ", hashDec[i]);
-		if (i == HASH_UINT_COUNT - 1) printf("%u ", hashDec[i]);
 	}
-	printf("]\n");
+	printf("%u ]\n", hashDec[HASH_UINT_COUNT - 1]);
 
-	char preproc[512];
-	sprintf(preproc,
-		    "-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u \
-             -D KEY_LENGTH=%d -D SALT_LENGTH=%d -D SALT_STRING=\"%s\"",
-		    hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7],
-			MAX_KEY_SIZE, saltLength, salt);
 
-	//Calculate optimal thread size
-	cl_ulong maxMemoryAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
-	cl_ulong unitSize = MAX_KEY_SIZE;
-	int hashThreadCount = min(maxMemoryAlloc / MAX_KEY_SIZE, 46960);
-
-	printf("Optimal thread size: %u\n", hashThreadCount);
-	
+	//Begin cracking
 	try
 	{
+		//Generate compiler command
+		char command[256];
+		sprintf_s(command,
+				  "-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u "
+				        "-D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%d -D SALT_LENGTH=%d -D SALT_STRING=%s",
+				  hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4],
+				  hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE, saltLength, csalt);
+
+
+		//Compile kernel
 		printf("Compiling kernel...\n");
-		if (compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", preproc) != "")
+		if (compileKernel("crack_single_salted.kernel.cl", "sha256crack_single_salted_kernel", command) != "")
 		{
-			return std::string();
+			return std::string("Error while compiling kernel.");
 		}
 		printf("Kernel compiled.\n");
 
-		//Make GPU buffers
-		printf("Initializing kernel...\n");
-		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * hashThreadCount);
-		Buffer resultBuffer = Buffer(context, CL_MEM_WRITE_ONLY, hashThreadCount);
-
-		//Initialize local variables
-		char* result = new char[hashThreadCount];
-		char* inputBuffer1 = new char[MAX_KEY_SIZE * hashThreadCount];
-		char* inputBuffer2 = new char[MAX_KEY_SIZE * hashThreadCount];
-		char* currentBuffer = inputBuffer1;
-		size_t match = -1;
-		int lineCount = 0;
-		std::vector<Event> eventQueue;
-		int i = 0;
-		int previ = 0;
-		char bufferid = 0;
-		bool finished = false;
 
 		//Open file
 		FILE* infile = fopen(infileName.c_str(), "r");
 		if (!infile)
 		{
-			printf("Infile could not be opened.\n");
+			printf("File could not be opened.\n");
+			return std::string("File could not be opened.");
 		}
+
+
+		//Initialize local variables
+		printf("Initializing kernel...\n");
+		unsigned int hashThreadCount = threadSize;
+		unsigned int result = 0;
+		cl::Event event;
+		unsigned int lineCount = 0;
+		unsigned int i = 0;
+		unsigned int previ = 0;
+		bool bufferid = 0;
+		bool run = true;
+
+
+		//Generate buffers	
+		char* inputBuffers[2];
+		inputBuffers[0] = new char[MAX_KEY_SIZE * threadSize];
+		inputBuffers[1] = new char[MAX_KEY_SIZE * threadSize];
+		char* currentBuffer = inputBuffers[0];
+
+		Buffer keyBuffer = Buffer(context, CL_MEM_READ_ONLY, HASH_CHAR_SIZE * threadSize);
+		Buffer resultBuffer = Buffer(context, CL_MEM_ALLOC_HOST_PTR, sizeof(int));
+
+
+		// Set arguments to kernel
+		kernel.setArg(0, keyBuffer);
+		kernel.setArg(1, resultBuffer);
+
 
 		//Start timer
 		auto startTime = high_resolution_clock::now();
@@ -95,111 +102,91 @@ std::string GPUController::crackSingleSalted(std::string infileName, std::string
 
 		}
 
-		while (true)
+		while (run)
 		{
-			if (finished)
-			{
-				break;
-			}
+			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL);
 
-			// Write data on input buffers!
-			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, &eventQueue);
-			if (bufferid)
-			{
-				bufferid = false;
-				currentBuffer = inputBuffer1;
-			}
-			else
-			{
-				bufferid = true;
-				currentBuffer = inputBuffer2;
-			}
 
-			// Set arguments to kernel
-			kernel.setArg(0, keyBuffer);
-			kernel.setArg(1, resultBuffer);
+			//Swap buffers
+			bufferid = (bufferid + 1) % 2;
+			currentBuffer = inputBuffers[bufferid];
+
 
 			//Run kernel
-			NDRange globalRange(i);
-			lineCount += i;
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, globalRange, cl::NullRange, NULL, &eventQueue[0]);
-			queue.enqueueReadBuffer(resultBuffer, CL_FALSE, 0, i, result, &eventQueue);
+			NDRange _global_(i);
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &event);
 
 			//Read lines
-			int cline = 0;
+			unsigned int cline = 0;
 			for (; cline < hashThreadCount && fgets(&currentBuffer[MAX_KEY_SIZE * cline], MAX_KEY_SIZE, infile); cline++)
 			{
 
 			}
-			if (cline == 0) finished = true;
+			if (cline == 0) run = false;
+
 
 			//Await kernel
-			eventQueue[0].wait();
+			event.wait();
+			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, NULL);
 
-			//Verify match
-			for (int j = 0; j < i; j++)
+			//Check match
+			if (result > 0) //Step out: match
 			{
-				if (result[j])
-				{
-					match = lineCount + j;
-					hashThreadCount = j;
-					break;
-				}
+				lineCount += result;
+				run = false;
 			}
-
-			i = cline;
-
-			if (match != -1)
+			else //Step over: no match
 			{
-				break;
+				lineCount += i;
+				i = cline;
+				//printf("%u\n", lineCount);
 			}
 		}
 
 		auto stopTime = high_resolution_clock::now();
-		auto duration = duration_cast<microseconds>(stopTime - startTime);
+		auto duration = std::chrono::duration_cast<microseconds>(stopTime - startTime);
 
 		fclose(infile);
 
-		printf("Crack kernel completed.\n");
+		printf("Crack kernel finished.\n");
 
-		std::string outString;
-		if (match == -1)
+		std::string outString = "";
+		if (result == 0)
 		{
 			printf("===============\nNo match found.\n");
-
 			printf("Lines verified: %d\n", lineCount);
-			outString = "";
-
 			printf("===============\n");
 		}
 		else
 		{
+			//Get result 
+			char* res = &inputBuffers[!bufferid][(result - 1) * MAX_KEY_SIZE];
+
+			//Remove line break
+			for (int i = 0; i < MAX_KEY_SIZE; i++)
+			{
+				if (res[i] == '\n')
+				{
+					res[i] = 0;
+					break;
+				}
+			}
+
+			outString = std::string(res);
+
 			printf("===============\nMatch found.\n");
-
-			if (bufferid)
-			{
-				char* res = &inputBuffer1[hashThreadCount * MAX_KEY_SIZE];
-				printf("Key: '%s'\n", res);
-				outString = std::string(res);
-			}
-			else
-			{
-				char* res = &inputBuffer2[hashThreadCount * MAX_KEY_SIZE];
-				printf("Key: '%s'\n", res);
-				outString = std::string(res);
-			}
-
-			printf("Line: %d\n", lineCount);
-
-			printf("===============\n");
+			printf("Key: '%s'\n", res);
+			printf("Line: %d\n===============\n", lineCount);
 		}
 
-		long micro = (long)duration.count();
+		long long micro = (long)duration.count();
 		printf("Runtime: %lu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
-		delete[] result;
-		delete[] salt;
+		//Cleanup
+		delete[] inputBuffers[0];
+		delete[] inputBuffers[1];
+
 		return outString;
 	}
 	catch (Error error)

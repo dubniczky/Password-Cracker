@@ -46,6 +46,8 @@ public:
         return rotr(x, 6) ^ rotr(x, 11) ^ rotr(x, 25);
     }
 
+    std::string storedHash;
+
     sha256()
     {
 
@@ -173,5 +175,115 @@ public:
         }
         result[64] = 0;
         return std::string(result);
+    }
+
+    bool verify(const uint keyLength, const std::string skey)
+    {
+        //Initialize
+        int qua; //Message schedule step count
+        int mod; //Message schedule step modulus
+        uint A, B, C, D, E, F, G, H; //Compression targets
+        uint T1, T2; //Compression temp
+        uint W[80]; //Message schedule
+
+
+        //Reset algorithm
+        #pragma unroll
+        for (int i = 0; i < 80; i++)
+        {
+            W[i] = 0x00000000;
+        }
+
+
+        //Create message block
+        const char* key = skey.c_str();
+        qua = keyLength / 4;
+        mod = keyLength % 4;
+        for (int i = 0; i < qua; i++)
+        {
+            W[i] = (key[i * 4 + 0]) << 24;
+            W[i] |= (key[i * 4 + 1]) << 16;
+            W[i] |= (key[i * 4 + 2]) << 8;
+            W[i] |= (key[i * 4 + 3]);
+        }
+
+        if (mod == 0)
+        {
+            W[qua] = 0x80000000;
+        }
+        else
+        {
+            W[qua] = ((key[qua * 4 + 0]) << 24);
+            W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
+            W[qua] |= ((key[qua * 4 + 2]) << 8) * (1 - (mod % 3));
+            W[qua] |= 0x80 << 8 * (3 - mod);
+        }
+
+        W[15] = keyLength * 8; //Add key length
+
+
+        //Run message schedule
+        #pragma unroll
+        for (int i = 16; i < 64; i++)
+        {
+            W[i] = sig1(W[i - 2]) + W[i - 7] + sig0(W[i - 15]) + W[i - 16];
+        }
+
+
+        //Prepare compression
+        A = H0;
+        B = H1;
+        C = H2;
+        D = H3;
+        E = H4;
+        F = H5;
+        G = H6;
+        H = H7;
+
+
+        //Compress
+        #pragma unroll
+        for (int i = 0; i < 64; i++)
+        {
+            //Compress temporary
+            T1 = H + csig1(E) + ch(E, F, G) + K[i] + W[i];
+            T2 = csig0(A) + maj(A, B, C);
+
+            //Rotate over, override H
+            H = G;
+            G = F;
+            F = E;
+            E = D + T1;
+            D = C;
+            C = B;
+            B = A;
+            A = T1 + T2;
+        }
+
+        W[0] = A + H0;
+        W[1] = B + H1;
+        W[2] = C + H2;
+        W[3] = D + H3;
+        W[4] = E + H4;
+        W[5] = F + H5;
+        W[6] = G + H6;
+        W[7] = H + H7;
+
+
+        //Convert uints to hex char array
+        char hex_charset[] = "0123456789abcdef";
+        #pragma unroll
+        char result[65];
+        for (int j = 0; j < 8; j++)
+        {
+            #pragma unroll
+            for (int len = 8 - 1; len >= 0; W[j] >>= 4, --len)
+            {
+                result[(j * 8) + len] = hex_charset[W[j] & 0xf];
+            }
+        }
+        result[64] = 0;
+        const std::string resultS = result;
+        return resultS == this->storedHash;
     }
 };

@@ -40,7 +40,6 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
     for (length = 0; length < KEY_LENGTH && (key[length] != 0 && key[length] != '\n'); length++) { }
     key[length] = 0;
 
-
     //Reset algorithm
     #pragma unroll
     for (int i = 0; i < 80; i++)
@@ -60,16 +59,28 @@ kernel void sha256crack_single_kernel(global uchar* keys, global uint* result)
         W[i] |= (key[i * 4 + 3]);
     }
 
+    //Pad remaining uint
     if (mod == 0)
     {
         W[qua] = 0x80000000;
     }
+    else if (mod == 1)
+    {
+        W[qua] = (key[qua * 4]) << 24;
+        W[qua] |= 0x800000;
+    }
+    else if (mod == 2)
+    {
+        W[qua] = (key[qua * 4]) << 24;
+        W[qua] |= (key[qua * 4 + 1]) << 16;
+        W[qua] |= 0x8000;
+    }
     else
     {
-        W[qua]  = ((key[qua * 4 + 0]) << 24);
-        W[qua] |= ((key[qua * 4 + 1]) << 16) * (1 - (mod % 2));
-        W[qua] |= ((key[qua * 4 + 2]) << 8) * (1 - (mod % 3));
-        W[qua] |= 0x80 << 8 * (3 - mod);
+        W[qua] = (key[qua * 4]) << 24;
+        W[qua] |= (key[qua * 4 + 1]) << 16;
+        W[qua] |= (key[qua * 4 + 2]) << 8;
+        W[qua] |= 0x80;
     }
 
     W[15] = length * 8; //Add key length

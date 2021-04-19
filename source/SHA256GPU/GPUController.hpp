@@ -48,9 +48,9 @@ private:
 public:
 	//Constructor
 	GPUController();
-	GPUController(int contextId, int deviceId, int threadSize = 1000);
+	GPUController(int contextId, int deviceId, int threadSize = 5000);
 
-	bool attachDevice(const int contextId = 0, const int deviceId = 0, const int threadSize = 1000);
+	bool attachDevice(const int contextId = 0, const int deviceId = 0, const int threadSize = 5000);
 
 	std::string platformDetails() const;
 

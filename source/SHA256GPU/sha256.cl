@@ -1,3 +1,23 @@
+//Debug default
+#ifdef USE_DEBUG_DEFAULTS
+
+    #define KEY_LENGTH 17
+    #define SALT_LENGTH 6
+    #define SALT_STRING Hf45DD
+
+    //Key: 'enclosesHf45DD' (8:6)
+    #define HASH_0 2627633883
+    #define HASH_1 342531070
+    #define HASH_2 1941191403
+    #define HASH_3 4203335048
+    #define HASH_4 2588921030
+    #define HASH_5 4270942822
+    #define HASH_6 3704920044
+    #define HASH_7 3301016226
+
+#endif
+
+
 //SHA-256 context
 #define H0 0x6a09e667
 #define H1 0xbb67ae85
@@ -8,6 +28,9 @@
 #define H6 0x1f83d9ab
 #define H7 0x5be0cd19
 
+//String convert macro
+#define STR(s) #s
+#define XSTR(s) STR(s)
 
 //Methods
 // << : bitshift left

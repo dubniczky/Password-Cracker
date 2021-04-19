@@ -12,4 +12,8 @@
     <LocalDebuggerCommandArguments>../../passwords/passwords-100k.txt hashes.txt</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>../../passwords/passwords-4m.txt 8d2b8da91ff28558d835c17ef91c07000bc58896ef7b98710c18dea92afb836f salty</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
 </Project>

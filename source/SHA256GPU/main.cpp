@@ -15,8 +15,10 @@ crack single ../../passwords/passwords-100.txt 15062cd57ae7b7eaf0aa3262fb44428a1
 crack single ../../passwords/passwords-100k.txt 15062cd57ae7b7eaf0aa3262fb44428a13bfc4686fcd84ba4a7a092bf7556e42
 crack single ../../passwords/passwords-4m.txt 15062cd57ae7b7eaf0aa3262fb44428a13bfc4686fcd84ba4a7a092bf7556e42
 
---4m last match
+--4m last match ex-wethouder
 crack single ../../passwords/passwords-4m.txt 59557cf1890bf0b7458c1e66119ab01c3a796fd09df296ef7e70745d29934777
+--4m last match ex-wethouder + salty
+crack single ../../passwords/passwords-4m.txt salty8d2b8da91ff28558d835c17ef91c07000bc58896ef7b98710c18dea92afb836f
 --100k last match (encloses)
 crack single ../../passwords/passwords-100k.txt c79c99dded78b97103916e94e5bc052d0b881ad2da896674b177bda1b1830e35
 

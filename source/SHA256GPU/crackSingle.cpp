@@ -139,7 +139,7 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 			{
 				lineCount += i;
 				i = cline;
-				printf("%u\n", lineCount);
+				//printf("%u\n", lineCount);
 			}			
 		}
 

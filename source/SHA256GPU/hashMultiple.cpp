@@ -2,7 +2,7 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-unsigned int GPUController::hashMultiple(std::string infileName, std::string outfileName)
+unsigned int GPUController::hashMultiple(const std::string& infileName, const std::string& outfileName)
 {
 	//Print hash 
 	const char* infilec = infileName.c_str();
@@ -45,7 +45,6 @@ unsigned int GPUController::hashMultiple(std::string infileName, std::string out
 		cl::Event event;
 		unsigned int lineCount = 0;
 		unsigned int i = 0;
-		unsigned int previ = 0;
 		bool bufferid = 0;
 		bool run = true;
 

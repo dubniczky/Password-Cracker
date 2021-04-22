@@ -18,7 +18,7 @@
 #endif
 
 
-//SHA-256 context
+//Base SHA-256 context
 #define H0 0x6a09e667
 #define H1 0xbb67ae85
 #define H2 0x3c6ef372
@@ -39,6 +39,8 @@
 // ~  : bitwise NOT
 // &  : bitwise AND
 // |  : bitwise OR
+
+
 inline uint rotr(uint x, int n) //Rotate right
 {
     return (x >> n) | (x << (32 - n));
@@ -47,7 +49,7 @@ inline uint ch(uint x, uint y, uint z) //Choice based on x
 {
     return (x & y) ^ (~x & z);
 }
-inline uint maj(uint x, uint y, uint z) //Majority bits
+inline uint maj(uint x, uint y, uint z) //Majority of bits in x, y
 {
     return (x & y) ^ (x & z) ^ (y & z);
 }

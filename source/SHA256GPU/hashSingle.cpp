@@ -1,6 +1,6 @@
 #include "GPUController.hpp"
 
-std::string GPUController::hashSingle(std::string key)
+std::string GPUController::hashSingle(const std::string& key)
 {
 	
 	try

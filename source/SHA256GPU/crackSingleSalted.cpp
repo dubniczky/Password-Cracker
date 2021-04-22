@@ -1,6 +1,6 @@
 ﻿#include "GPUController.hpp"
 
-std::string GPUController::crackSingleSalted(std::string infileName, std::string saltHash)
+std::string GPUController::crackSingleSalted(const std::string& infileName, const std::string& saltHash)
 {
 	//Separate salt and hash
 	unsigned int saltLength = saltHash.length() - 64;
@@ -73,7 +73,6 @@ std::string GPUController::crackSingleSalted(std::string infileName, std::string
 		cl::Event event;
 		unsigned int lineCount = 0;
 		unsigned int i = 0;
-		unsigned int previ = 0;
 		bool bufferid = 0;
 		bool run = true;
 

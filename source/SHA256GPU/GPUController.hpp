@@ -55,13 +55,13 @@ public:
 	std::string platformDetails() const;
 
 	//Hashing
-	std::string hashSingle(std::string key);
-	std::string hashSingleSalted(std::string key, std::string salt);
-	unsigned int hashMultiple(std::string sourceFile, std::string targetFile);
+	std::string hashSingle(const std::string& key);
+	std::string hashSingleSalted(const std::string& key, const std::string& salt);
+	unsigned int hashMultiple(const std::string& sourceFile, const std::string& targetFile);
 
 	//Cracking
-	std::string crackSingle(const std::string sourceFile, const std::string hash);
-	std::string crackSingleSalted(std::string sourceFile, std::string hash);
+	std::string crackSingle(const std::string& sourceFile, const std::string& hash);
+	std::string crackSingleSalted(const std::string& sourceFile, const std::string& hash);
 
 private:
 	std::string compileKernel(const std::string fileName, const std::string kernelName, const std::string parameters = "");

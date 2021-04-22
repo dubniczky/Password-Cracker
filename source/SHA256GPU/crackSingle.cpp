@@ -1,7 +1,7 @@
 #include "GPUController.hpp"
 
 
-std::string GPUController::crackSingle(const std::string infileName, const std::string hash)
+std::string GPUController::crackSingle(const std::string& infileName, const std::string& hash)
 {
 	//Redirect if salted
 	if (hash.length() > 64)
@@ -73,7 +73,6 @@ std::string GPUController::crackSingle(const std::string infileName, const std::
 		cl::Event event;
 		unsigned int lineCount = 0;		
 		unsigned int i = 0;
-		unsigned int previ = 0;
 		bool bufferid = 0;
 		bool run = true;
 

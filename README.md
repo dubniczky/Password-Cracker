@@ -1,8 +1,6 @@
 # Password Hash Cracking on GPU
 *by: Richard Nagy, 2020/02 - 2020/04*
 
-[![](https://tokei.rs/b1/github/XAMPPRocky/tokei)](https://https://gitlab.com/richardnagy/passhash)
-
 ## Quick Description
 
 We use hashes to protect user password from being exposed in the event of a breach. Servers use algorithms that create so-called hashes, which are impossible to reverse but even so, you can start trying to guess the password normally it takes so long that is not technically feasible with our current technology.

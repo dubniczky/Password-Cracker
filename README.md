@@ -1,7 +1,7 @@
 # Password Hash Cracking on GPU
 *by: Richard Nagy, 2020/02 - 2020/04*
 
-[![](https://tokei.rs/b1/github/XAMPPRocky/tokei)](https://github.com/XAMPPRocky/tokei)
+[![](https://tokei.rs/b1/github/XAMPPRocky/tokei)](https://https://gitlab.com/richardnagy/passhash)
 
 ## Quick Description
 

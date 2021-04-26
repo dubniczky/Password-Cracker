@@ -56,5 +56,6 @@
     <ClInclude Include="ArgList.hpp" />
     <ClInclude Include="MainCommandRelay.hpp" />
     <ClInclude Include="KernelProperties.hpp" />
+    <ClInclude Include="LinkedNode.hpp" />
   </ItemGroup>
 </Project>

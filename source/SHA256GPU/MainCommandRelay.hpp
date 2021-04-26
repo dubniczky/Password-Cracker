@@ -14,19 +14,36 @@
 #define DESC_HASHMULT printf("hash multiple <source> <target>             : hash multiple passwords from source to target file\n")
 #define DESC_CRACSING printf("crack single <passwords> <hash>             : crack hash using a passwords source with options\n")
 
+/**
+ * Results given by the MainCommandRelay.
+ */
 enum class RelayResult
 {
+	//Command relayed successfully.
 	RSuccess = 0,
+	//Command has missing parameters.
 	RIncomplete = 1,
+	//Command has an unknown segment.
 	RUnknown = 2,
+	//Command has too many arguments.
 	RLong = 3,
+	//Command has errors in the properties.
 	RUnresolved = 4,
+	//Command has failed to attach the device to the controller.
 	RAttach = 5
 };
 
 class MainCommandRelay
 {
 public:
+	//Level 0 relay
+	/**
+	 * Deconstruct the given command and run the applicable appication.
+	 * 
+	 * @param argc Argument count.
+	 * @param args Argument array.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult relay(int argc, char* argv[])
 	{
 		//Convert args
@@ -84,6 +101,13 @@ public:
 
 private:
 	//Level 1 relays
+	/**
+	 * Deconstruct the next layer of the given platform command and relay if resolved successfully. Called by a level 0 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult platformRelay(ArgList& args, const KernelProperties& properties)
 	{
 		GPUController* gpuc = new GPUController();
@@ -92,6 +116,14 @@ private:
 
 		return RelayResult::RSuccess;
 	}
+
+	/**
+	 * Deconstruct the next layer of the given hash command and relay if resolved successfully. Called by a level 0 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult hashRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Incomplete
@@ -121,6 +153,14 @@ private:
 		printf("Use single, or multiple instead.\n");
 		return RelayResult::RUnknown;
 	}
+
+	/**
+	 * Deconstruct the next layer of the given crack command and relay if resolved successfully. Called by a level 0 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult crackRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Incomplete
@@ -145,6 +185,13 @@ private:
 	}
 
 	//Level 2 relays
+	/**
+	 * Deconstruct the next layer of the given hash single command and relay if resolved successfully. Called by a level 1 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult hashSingleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate
@@ -187,6 +234,14 @@ private:
 		delete gpuc;
 		return RelayResult::RSuccess;
 	}
+
+	/**
+	 * Deconstruct the next layer of the given hash multiple command and relay if resolved successfully. Called by a level 1 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult hashMultipleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate
@@ -222,6 +277,14 @@ private:
 		delete gpuc;
 		return RelayResult::RSuccess;
 	}
+
+	/**
+	 * Deconstruct the next layer of the given crack single command and relay if resolved successfully. Called by a level 1 relay.
+	 *
+	 * @param args Argument List.
+	 * @param properties KernelProperties object to attach with.
+	 * @return RelayResult object depending on the outcome.
+	 */
 	static RelayResult crackSingleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate

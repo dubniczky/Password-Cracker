@@ -26,11 +26,21 @@ public:
 	int threadSize;
 	int maxKeySize;
 
+	/**
+	  * Creates and instance of KernelProperties with the following arguments
+	  * @param platformId The id of the platform.
+	  * @param deviceId The id of the device.
+	  * @param threadSize The number of keys in a thread at once.
+	  * @param maxKeySize The maximum size of a key.
+	 */
 	KernelProperties(int platformId, int deviceId, int threadSize, int maxKeySize)
 		: platformId(platformId), deviceId(deviceId), threadSize(threadSize), maxKeySize(maxKeySize)
 	{
 
 	}
+	/**
+	  * Creates and instance of KernelProperties with the default properties
+	 */
 	KernelProperties()
 		: platformId(DEFAULT_PLATFORM),
 		  deviceId(DEFAULT_DEVICE),
@@ -40,6 +50,11 @@ public:
 
 	}
 
+
+	/**
+	  * Determined if the current parameters are valid numbers in the accepted ranges (attaching device might fail despite).
+	  * @return Are the parameters valid.
+	 */
 	bool valid() const
 	{
 		return this->platformId >= 0 &&
@@ -48,7 +63,10 @@ public:
 			   this->maxKeySize >= MIN_MAX_KEY_SIZE && this->maxKeySize <= MAX_MAX_KEY_SIZE; //TODO upper limit
 	}
 
-	void print()
+	/**
+	  * Prints the properties formatted to the standard output.
+	 */
+	void print() const
 	{
 		std::cout << "Properties:" << std::endl
 			<< "   Device: " << platformId << ":" << deviceId << std::endl
@@ -57,6 +75,12 @@ public:
 	}
 
 	//Static
+	/**
+	  * Create an arg list by fetching them from an ArgList object.
+	  * @param properties object for the output results.
+	  * @param args object for the fetching (fetched items are removed).
+	  * @return Returns false if there was and error while parsing one or more arguments.
+	 */
 	static bool FromArgList(KernelProperties& properties, ArgList& args)
 	{
 		//Get properties
@@ -99,6 +123,11 @@ public:
 	}
 
 private:
+	/**
+	  * Returns wether the string is a valid integer or not.
+	  * @param str String to check.
+	  * @return Returns true if the str is a valid integer.
+	 */
 	static bool isIntString(std::string str)
 	{
 		if (str.length() == 0) return false;

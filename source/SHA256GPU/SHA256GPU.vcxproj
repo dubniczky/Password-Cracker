@@ -364,6 +364,7 @@
   <ItemGroup>
     <ClInclude Include="KernelProperties.hpp" />
     <ClInclude Include="ArgList.hpp" />
+    <ClInclude Include="LinkedNode.hpp" />
     <ClInclude Include="MainCommandRelay.hpp" />
     <ClInclude Include="GPUController.hpp" />
   </ItemGroup>

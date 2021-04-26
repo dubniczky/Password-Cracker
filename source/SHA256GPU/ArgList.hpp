@@ -3,77 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "LinkedNode.hpp"
 
-template<typename ItemType>
-struct LinkedNode
-{
-public:
-	ItemType arg;
-	LinkedNode<ItemType>* next;
-
-	LinkedNode(ItemType arg)
-	{
-		this->arg = arg;
-		this->next = nullptr;
-	}
-
-	int calcLength()
-	{
-		if (next == nullptr) return 1;
-		else return next->calcLength() + 1;
-	}
-
-	void add(ItemType item)
-	{
-		if (next == nullptr)
-		{
-			next = new LinkedNode(item);
-		}
-		else
-		{
-			next->add(item);
-		}
-	}
-	void dump(std::vector<ItemType>* v) const
-	{
-		v->push_back(arg);
-		if (next != nullptr)
-		{
-			next->dump(v);
-		}
-	}
-	ItemType fetchProperty(LinkedNode<ItemType>* previous, ItemType marker)
-	{
-		if (arg == marker) //Found
-		{
-			if (next == nullptr) //No value
-			{
-				previous->next = nullptr;
-				delete this;
-				return "-";
-			}
-			else //Return value
-			{
-				previous->next = this->next->next;
-
-				ItemType res = this->next->arg;
-
-				delete this->next;
-				delete this;
-
-				return res;
-			}
-		}
-		else if (next != nullptr) //Move next
-		{
-			return next->fetchProperty(this, marker);
-		}
-		else //Not found
-		{
-			return "";
-		}
-	}
-};
 
 struct ArgList
 {
@@ -87,11 +18,18 @@ private:
 	}
 public:
 	//Construct
+	/**
+	 * Creates and empty ArgList
+	 */
 	ArgList()
 	{
 		this->start = nullptr;
 		this->length = 0;
 	}
+
+	/**
+	 * Deconstructs ArgList
+	 */
 	~ArgList()
 	{
 		while (length > 0)
@@ -103,6 +41,10 @@ public:
 
 
 	//Modify
+	/**
+	 * Adds an item to the end of the ArgList.
+	 * @param item Item to add.
+	 */
 	void add(std::string item)
 	{
 		if (start == nullptr)
@@ -115,6 +57,10 @@ public:
 		}
 		length++;
 	}
+
+	/**
+	 * Removes the first item in the ArgList if it's not empty.
+	 */
 	void pop()
 	{
 		if (start == nullptr) return;
@@ -124,6 +70,12 @@ public:
 		start = next;
 		length--;
 	}
+
+	/**
+	 * Fetches the property associated with the given marker
+	 * @param marker Marker to search for
+	 * @return Returns the property found by the chain or an empty string if not found, or a dash if the property was invalid or not found.
+	 */
 	std::string fetchProperty(std::string marker)
 	{
 		if (marker == "" || start == nullptr || start->next == nullptr)
@@ -138,19 +90,39 @@ public:
 
 
 	//Query
+	/**
+	 * Returns the first item in the ArgList or an empty string.
+	 * @return First item
+	 */
 	std::string get() const
 	{
-		return (start == nullptr) ? std::string("") : start->arg;
+		return (start == nullptr) ? std::string("") : start->item;
 	}
+
+	/**
+	 * Returns the number of items in the list.
+	 * @return Count.
+	 */
 	int count() const
 	{
 		return length;
 	}
-	bool first(std::string s) const
+
+	/**
+	 * Returns if the first item in the ArgList matches the given string.
+	 * @param match String to match.
+	 * @return True if the given string matches the first item, false if no match or empty list.
+	 */
+	bool first(std::string match) const
 	{
 		if (start == nullptr) return false;
-		else return s == start->arg;
+		else return match == start->item;
 	}
+
+	/**
+	 * Collects the items in the ArgList and adds them to the given vector.
+	 * @param v Target vector to dump the items to.
+	 */
 	void dump(std::vector<std::string>& v) const
 	{
 		if (start == nullptr) return;

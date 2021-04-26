@@ -1,66 +1,81 @@
 #include "GPUController.hpp"
 
 //Construct
-GPUController::GPUController() : platformId(0), deviceId(0), threadSize(22400)
+GPUController::GPUController()
 {
 	
 }
-GPUController::GPUController(int platformId, int deviceId, int threadSize)
-	: platformId(platformId), deviceId(deviceId), threadSize(threadSize)
+GPUController::GPUController(const KernelProperties& props)
 {
-	
+	this->attachDevice(props);
 }
 
 //Initialize
-bool GPUController::attachDevice(const int platformId, const int deviceId, const int threadSize)
+bool GPUController::attachDevice(const KernelProperties& props)
 {
 	//Guard
-	if (platformId < 0) throw Error(CL_INVALID_CONTEXT, "Invalid platform ID.");
-	if (deviceId < 0) throw Error(CL_INVALID_CONTEXT, "Invalid device ID.");
-	if (threadSize < 1) throw Error(CL_INVALID_CONTEXT, "Invalid thread size.");
+	if (!props.valid())
+	{
+		std::cout << "Invalid Properties Received on Device Attach" << std::endl;
+		return false;
+	}
 
 
-	//Get device
+	//Create context
 	std::vector<cl::Platform> platforms;
 	std::vector<cl::Device> devices;
 	Context context;
 
 
-	//Validate requested device
+	//Validate and initialize requested device
 	try
 	{
 		//Get platform
 		Platform::get(&platforms);
+		if (platforms.size() <= props.platformId)
+		{
+			std::cout << "Invalid platform." << std::endl;
+			return false;
+		}
 		cl_context_properties cps[3] =
 		{
 			CL_CONTEXT_PLATFORM,
-			(cl_context_properties)(platforms[platformId])(),
+			(cl_context_properties)(platforms[props.platformId])(),
 			(cl_context_properties)0
 		};
+
 
 		//Get device
 		context = Context(CL_DEVICE_TYPE_GPU, cps);
 		devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		if (devices.size() <= deviceId)
+		if (devices.size() <= props.deviceId)
 		{
-			throw Error(CL_INVALID_CONTEXT, "No compatible devices found!");
+			std::cout << "Invalid device." << std::endl;
+			return false;
 		}
 	}
 	catch (cl::Error error)
 	{
 		oclPrintError(error);
-		throw error;
+		return false;
+	}
+	catch (...)
+	{
+		std::cout << "Selected device could not load." << std::endl;
+		return false;
 	}
 
 	//Construct instance
-	this->platformId = platformId;
-	this->deviceId = deviceId;
-	this->platform = platforms[platformId];
-	this->device = devices[deviceId];
-	this->context = context;
-	this->queue = CommandQueue(context, devices[deviceId], CL_QUEUE_PROFILING_ENABLE);
+	this->platformId = props.platformId;
+	this->deviceId = props.deviceId;
+	this->platform = platforms[props.platformId];
+	this->device = devices[props.deviceId];
+	this->threadSize = props.threadSize;
 
-	std::cout << "Device Attached: (" << platformId << ":" << deviceId << ") " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
+	this->context = context;	
+	this->queue = CommandQueue(context, devices[props.deviceId], CL_QUEUE_PROFILING_ENABLE);
+
+	std::cout << "Device Attached: (" << props.platformId << ":" << props.deviceId << ") " << device.getInfo<CL_DEVICE_NAME>() << std::endl;
 	return true;
 }
 std::string GPUController::compileKernel(const std::string fileName, const std::string kernelName, const std::string params)
@@ -115,15 +130,33 @@ std::string GPUController::compileKernel(const std::string fileName, const std::
 }
 
 //Utilities
-void GPUController::hexToDec(const std::string hex, cl_uint* dec) const
+bool GPUController::hexToDec(const std::string hex, cl_uint* dec) const
 {
+	//Validate
+	auto isNumber = [](char hx) { return hx >= 0x30 && hx <= 0x39; };
+	auto isHexchar = [](char hx) { return hx >= 0x41 && hx <= 0x46 || hx >= 0x61 && hx <= 0x66; };
+
+	int l = hex.length();
+	if (l != 64) return false;
+
+	for (int i = 0; i < 64; i++)
+	{
+		char c = hex[i];		
+		if (!isNumber(c) && !isHexchar(c))
+		{
+			return false;
+		}
+	}
+
+
+	//Convert
 	std::stringstream ss;
-	#pragma unroll
-	for (size_t i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		ss << std::hex << hex.substr(i * 8, 8);
 		ss >> dec[i];
 		ss.str("");
 		ss.clear();
 	}
+	return true;
 }

@@ -84,4 +84,6 @@ std::string GPUController::platformDetails() const
 		oclPrintError(error);
 		return std::string(error.what());
 	}
+
+	return "";
 }

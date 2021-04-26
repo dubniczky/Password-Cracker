@@ -55,11 +55,11 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 //Main
 int main(int argc, char* argv[])
 {
-	int result = MainCommandRelay::relay(argc, argv);	
+	RelayResult result = MainCommandRelay::relay(argc, argv);	
 
 	#ifdef _DEBUG
 		_CrtDumpMemoryLeaks();
 	#endif //_DEBUG
 
-	return result;
+	return static_cast<int>(result);
 }

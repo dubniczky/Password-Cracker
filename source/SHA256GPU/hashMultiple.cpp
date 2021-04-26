@@ -125,7 +125,7 @@ unsigned int GPUController::hashMultiple(const std::string& infileName, const st
 		printf("Hash kernel finished.\n");
 
 		long long micro = (long)duration.count();
-		printf("Runtime: %lu microseconds.\n", micro);
+		printf("Runtime: %llu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
 		//Cleanup

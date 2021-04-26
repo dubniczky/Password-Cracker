@@ -139,8 +139,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)build\bin\gpu-debug</OutDir>
-    <IntDir>$(SolutionDir)build\obj\gpu-debug</IntDir>
+    <OutDir>$(SolutionDir)build\bin\gpu-debug\</OutDir>
+    <IntDir>$(SolutionDir)build\obj\gpu-debug\</IntDir>
     <TargetName>sha256gpu</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug CPU|x64'">
@@ -362,7 +362,8 @@
     <None Include="hash_single.kernel.cl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LinkedList.hpp" />
+    <ClInclude Include="KernelProperties.hpp" />
+    <ClInclude Include="ArgList.hpp" />
     <ClInclude Include="MainCommandRelay.hpp" />
     <ClInclude Include="GPUController.hpp" />
   </ItemGroup>

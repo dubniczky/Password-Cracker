@@ -18,7 +18,6 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 
 	//Print hexadecimal form	
 	printf("Hash hexform: [ ");
-	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
 		printf("'%.8s', ", &hashc[i * 8]);
@@ -30,7 +29,6 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 	cl_uint hashDec[8];
 	hexToDec(hash, hashDec);
 	printf("Hash decform: [ ");
-	#pragma unroll
 	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
 		printf("%u, ", hashDec[i]);
@@ -44,7 +42,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 		//Generate compiler command
 		char command[256];
 		sprintf_s(command,
-				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%d",
+				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%llu",
 				hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE);
 
 
@@ -179,7 +177,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 		}
 		
 		long long micro = (long)duration.count();
-		printf("Runtime: %lu microseconds.\n", micro);
+		printf("Runtime: %llu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
 		//Cleanup

@@ -53,7 +53,8 @@
     <ClInclude Include="GPUController.hpp">
       <Filter>GPUController</Filter>
     </ClInclude>
-    <ClInclude Include="LinkedList.hpp" />
+    <ClInclude Include="ArgList.hpp" />
     <ClInclude Include="MainCommandRelay.hpp" />
+    <ClInclude Include="KernelProperties.hpp" />
   </ItemGroup>
 </Project>

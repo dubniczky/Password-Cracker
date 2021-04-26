@@ -4,7 +4,9 @@
 #include <string>
 
 #include "GPUController.hpp"
-#include "LinkedList.hpp"
+#include "ArgList.hpp"
+
+#define VERSION "v1.0"
 
 #define DESC_PLATFORM printf("platform                                    : list available platforms and devices\n")
 #define DESC_HASHSING printf("hash single <password>                      : hash a single password\n")
@@ -12,117 +14,138 @@
 #define DESC_HASHMULT printf("hash multiple <source> <target>             : hash multiple passwords from source to target file\n")
 #define DESC_CRACSING printf("crack single <passwords> <hash>             : crack hash using a passwords source with options\n")
 
+enum class RelayResult
+{
+	RSuccess = 0,
+	RIncomplete = 1,
+	RUnknown = 2,
+	RLong = 3,
+	RUnresolved = 4,
+	RAttach = 5
+};
+
 class MainCommandRelay
 {
 public:
-	static int relay(int argc, char* argv[])
+	static RelayResult relay(int argc, char* argv[])
 	{
 		//Convert args
-		LinkedList<std::string> args;
+		ArgList args;
 		for (int i = 1; i < argc; i++)
 		{
 			args.add(std::string(argv[i]));
 		}
 
+		//Extract kernel properties
+		KernelProperties props;
+		if (!KernelProperties::FromArgList(props, args))
+		{
+			return RelayResult::RUnresolved;
+		}
+
+
 		if (args.count() == 0)
 		{
-			printf("SHA256GPU Cracker (v1.0) Commands:\n");
+			printf("SHA256GPU Cracker (%s) Commands:\n", VERSION);
 			DESC_PLATFORM;
 			DESC_HASHSING;
 			DESC_HASHSINS;
 			DESC_HASHMULT;
 			DESC_CRACSING;
-			return 0;
+
+			printf("Properties: -p <id>      (default: 0) platform identifier\n");
+			printf("            -d <id>      (default: 0) device identifier\n");
+			printf("            -t <count>   (default: 1024) keys cracked at once\n");
+			printf("            -k <size>    (default: 24) max key size\n");
+
+			return RelayResult::RIncomplete;
 		}
 
 		if (args.first("platform"))
 		{
 			args.pop();
-			return platformRelay(args);
+			return platformRelay(args, props);
 		}
 		else if (args.first("hash"))
 		{
 			args.pop();
-			return hashRelay(args);
+			return hashRelay(args, props);
 		}
 		else if (args.first("crack"))
 		{
 			args.pop();
-			return crackRelay(args);
+			return crackRelay(args, props);
 		}
-		else
-		{
-			printf("Unknown command: %s\n", args.get().c_str());
-			printf("Use platform, hash or crack instead.\n");
-			return 1;
-		}
+		
+		printf("Unknown command: %s\n", args.get().c_str());
+		printf("Use platform, hash or crack instead.\n");
+		return RelayResult::RUnknown;
 	}
 
 private:
 	//Level 1 relays
-	static int platformRelay(LinkedList<std::string>& args)
+	static RelayResult platformRelay(ArgList& args, const KernelProperties& properties)
 	{
 		GPUController* gpuc = new GPUController();
 		gpuc->platformDetails();
 		delete gpuc;
-		return 0;
+
+		return RelayResult::RSuccess;
 	}
-	static int hashRelay(LinkedList<std::string>& args)
+	static RelayResult hashRelay(ArgList& args, const KernelProperties& properties)
 	{
+		//Incomplete
 		if (args.count() == 0)
 		{
 			printf("Command incomplete.\n");
 			DESC_HASHSING;
 			DESC_HASHSINS;
 			DESC_HASHMULT;
-			return 0;
+			return RelayResult::RIncomplete;
 		}
 
+		//Type
 		if (args.first("single"))
 		{
 			args.pop();
-			return hashSingleRelay(args);
+			return hashSingleRelay(args, properties);
 		}
 		else if (args.first("multiple"))
 		{
 			args.pop();
-			return hashMultipleRelay(args);
-		}
-		else
-		{
-			printf("Unknown command: %s\n", args.get().c_str());
-			printf("Use single, or multiple instead.\n");
-			return 1;
+			return hashMultipleRelay(args, properties);
 		}
 
-		return 0;
+		//Unknown
+		printf("Unknown command: %s\n", args.get().c_str());
+		printf("Use single, or multiple instead.\n");
+		return RelayResult::RUnknown;
 	}
-	static int crackRelay(LinkedList<std::string>& args)
+	static RelayResult crackRelay(ArgList& args, const KernelProperties& properties)
 	{
+		//Incomplete
 		if (args.count() == 0)
 		{
 			printf("Command incomplete.\n");
 			DESC_CRACSING;
-			return 0;
+			return RelayResult::RIncomplete;
 		}
 
+		//Type
 		if (args.first("single"))
 		{
 			args.pop();
-			return crackSingleRelay(args);
-		}
-		else
-		{
-			printf("Unknown command: %s\n", args.get().c_str());
-			printf("Use single instead.\n");
-			return 1;
+			return crackSingleRelay(args, properties);
 		}
 
-		return 0;
+		//Unknown
+		printf("Unknown command: %s\n", args.get().c_str());
+		printf("Use single instead.\n");
+		return RelayResult::RUnknown;
 	}
 
 	//Level 2 relays
-	static int hashSingleRelay(LinkedList<std::string>& args)
+	static RelayResult hashSingleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate
 		int count = args.count();
@@ -131,22 +154,27 @@ private:
 			printf("Command incomplete.\n");
 			DESC_HASHSING;
 			DESC_HASHSINS;
-			return 0;
+			return RelayResult::RIncomplete;
 		}
 		if (count > 2)
 		{
 			printf("Command has too many parameters.\n");
 			DESC_HASHSING;
 			DESC_HASHSINS;
-			return 1;
+			return RelayResult::RLong;
 		}
 
-		//Run
+		//Get parameters
 		std::vector<std::string> arg;
 		args.dump(arg);
+
+		//Create
 		GPUController* gpuc = new GPUController();
-		gpuc->attachDevice();
-		
+		if (!gpuc->attachDevice(properties))
+		{
+			return RelayResult::RAttach;
+		}
+
 		if (count == 1) //simple
 		{
 			gpuc->hashSingle(arg[0]);
@@ -157,9 +185,9 @@ private:
 		}
 
 		delete gpuc;
-		return 0;
+		return RelayResult::RSuccess;
 	}
-	static int hashMultipleRelay(LinkedList<std::string>& args)
+	static RelayResult hashMultipleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate
 		int count = args.count();
@@ -167,26 +195,34 @@ private:
 		{
 			printf("Command incomplete.\n");
 			DESC_HASHMULT;
-			return 0;
+			return RelayResult::RIncomplete;
 		}
 		if (count > 2)
 		{
 			printf("Command has too many parameters.\n");
 			DESC_HASHMULT;
-			return 1;
+			return RelayResult::RLong;
 		}
 
-		//Run
+		//Get parameters
 		std::vector<std::string> arg;
 		args.dump(arg);
 
-		auto gpuc = new GPUController();
-		gpuc->attachDevice();
+		//Create
+		GPUController* gpuc = new GPUController();
+		if (!gpuc->attachDevice(properties))
+		{
+			return RelayResult::RAttach;
+		}
+
+		//Run
 		gpuc->hashMultiple(arg[0], arg[1]);
+
+		//Return
 		delete gpuc;
-		return 0;
+		return RelayResult::RSuccess;
 	}
-	static int crackSingleRelay(LinkedList<std::string>& args)
+	static RelayResult crackSingleRelay(ArgList& args, const KernelProperties& properties)
 	{
 		//Validate
 		int count = args.count();
@@ -194,24 +230,32 @@ private:
 		{
 			printf("Command incomplete.\n");
 			DESC_CRACSING;
-			return 0;
+			return RelayResult::RIncomplete;
 		}
 		if (count > 2)
 		{
 			printf("Command has too many parameters.\n");
 			DESC_CRACSING;
-			return 1;
+			return RelayResult::RLong;
+		}
+
+		//Get parameters
+		std::vector<std::string> arg;
+		args.dump(arg);
+
+		//Create
+		GPUController* gpuc = new GPUController();
+		if (!gpuc->attachDevice(properties))
+		{
+			return RelayResult::RAttach;
 		}
 
 		//Run
-		std::vector<std::string> arg;
-		args.dump(arg);
-		GPUController* gpuc = new GPUController();
-		gpuc->attachDevice();
 		gpuc->crackSingle(arg[0], arg[1]);
 
+		//Return
 		delete gpuc;
-		return 0;
+		return RelayResult::RSuccess;
 	}
 };
 

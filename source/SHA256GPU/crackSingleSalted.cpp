@@ -3,7 +3,7 @@
 std::string GPUController::crackSingleSalted(const std::string& infileName, const std::string& saltHash)
 {
 	//Separate salt and hash
-	unsigned int saltLength = saltHash.length() - 64;
+	size_t saltLength = saltHash.length() - 64;
 	std::string salt = saltHash.substr(0, saltLength);
 	std::string hash = saltHash.substr(saltLength, 64);
 	const char* csalt = salt.c_str();
@@ -27,7 +27,11 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 
 	//Print decimal form
 	cl_uint hashDec[8];
-	hexToDec(hash, hashDec);
+	if (!hexToDec(hash, hashDec))
+	{
+		printf("Invalid hash: %s", hash.c_str());
+		return "";
+	}
 	printf("Hash decform: [ ");
 	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
@@ -43,7 +47,7 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 		char command[256];
 		sprintf_s(command,
 				  "-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u "
-				        "-D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%d -D SALT_LENGTH=%d -D SALT_STRING=%s",
+				        "-D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%u -D SALT_LENGTH=%llu -D SALT_STRING=%s",
 				  hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4],
 				  hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE, saltLength, csalt);
 
@@ -70,7 +74,8 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 		printf("Initializing kernel...\n");
 		unsigned int hashThreadCount = threadSize;
 		unsigned int result = 0;
-		cl::Event event;
+		cl::Event event_write;
+		cl::Event event_run;
 		unsigned int lineCount = 0;
 		unsigned int i = 0;
 		bool bufferid = 0;
@@ -103,7 +108,7 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 
 		while (run)
 		{
-			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL);
+			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL, &event_write);
 
 
 			//Swap buffers
@@ -113,7 +118,8 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 
 			//Run kernel
 			NDRange _global_(i);
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &event);
+			std::vector<cl::Event> writeEvents = { event_write };
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, &writeEvents, &event_run);
 
 			//Read lines
 			unsigned int cline = 0;
@@ -125,8 +131,8 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 
 
 			//Await kernel
-			event.wait();
-			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, NULL);
+			std::vector<cl::Event> runEvents = { event_run };
+			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, &runEvents);
 
 			//Check match
 			if (result > 0) //Step out: match
@@ -138,7 +144,6 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 			{
 				lineCount += i;
 				i = cline;
-				//printf("%u\n", lineCount);
 			}
 		}
 
@@ -162,7 +167,7 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 			char* res = &inputBuffers[!bufferid][(result - 1) * MAX_KEY_SIZE];
 
 			//Remove line break
-			for (int i = 0; i < MAX_KEY_SIZE; i++)
+			for (unsigned int i = 0; i < MAX_KEY_SIZE; i++)
 			{
 				if (res[i] == '\n')
 				{
@@ -175,11 +180,12 @@ std::string GPUController::crackSingleSalted(const std::string& infileName, cons
 
 			printf("===============\nMatch found.\n");
 			printf("Key: '%s'\n", res);
+			printf("Salt: '%s'\n", hash.c_str());
 			printf("Line: %d\n===============\n", lineCount);
 		}
 
 		long long micro = (long)duration.count();
-		printf("Runtime: %lu microseconds.\n", micro);
+		printf("Runtime: %llu microseconds.\n", micro);
 		printf("         %f seconds.\n", micro / 1000000.0f);
 
 		//Cleanup

@@ -136,7 +136,7 @@ bool GPUController::hexToDec(const std::string hex, cl_uint* dec) const
 	auto isNumber = [](char hx) { return hx >= 0x30 && hx <= 0x39; };
 	auto isHexchar = [](char hx) { return hx >= 0x41 && hx <= 0x46 || hx >= 0x61 && hx <= 0x66; };
 
-	int l = hex.length();
+	size_t l = hex.length();
 	if (l != 64) return false;
 
 	for (int i = 0; i < 64; i++)

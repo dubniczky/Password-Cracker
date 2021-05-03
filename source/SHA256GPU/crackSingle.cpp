@@ -27,7 +27,11 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 	
 	//Print decimal form
 	cl_uint hashDec[8];
-	hexToDec(hash, hashDec);
+	if (!hexToDec(hash, hashDec))
+	{
+		printf("Invalid hash: %s", hash.c_str());
+		return "";
+	}
 	printf("Hash decform: [ ");
 	for (int i = 0; i < HASH_UINT_COUNT - 1; i++)
 	{
@@ -42,7 +46,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 		//Generate compiler command
 		char command[256];
 		sprintf_s(command,
-				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%llu",
+				"-D HASH_0=%u -D HASH_1=%u -D HASH_2=%u -D HASH_3=%u -D HASH_4=%u -D HASH_5=%u -D HASH_6=%u -D HASH_7=%u -D KEY_LENGTH=%u",
 				hashDec[0], hashDec[1], hashDec[2], hashDec[3], hashDec[4], hashDec[5], hashDec[6], hashDec[7], MAX_KEY_SIZE);
 
 
@@ -68,7 +72,8 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 		printf("Initializing kernel...\n");
 		unsigned int hashThreadCount = threadSize;
 		unsigned int result = 0;
-		cl::Event event;
+		cl::Event event_write;
+		cl::Event event_run;
 		unsigned int lineCount = 0;		
 		unsigned int i = 0;
 		bool bufferid = 0;
@@ -101,7 +106,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 		
 		while (run)
 		{
-			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL);
+			queue.enqueueWriteBuffer(keyBuffer, CL_FALSE, 0, MAX_KEY_SIZE * i, currentBuffer, NULL, &event_write);
 
 
 			//Swap buffers
@@ -111,7 +116,8 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 
 			//Run kernel
 			NDRange _global_(i);
-			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, NULL, &event);
+			std::vector<cl::Event> writeEvents = { event_write };
+			queue.enqueueNDRangeKernel(kernel, cl::NullRange, _global_, cl::NullRange, &writeEvents, &event_run);
 
 			//Read lines
 			unsigned int cline = 0;
@@ -123,8 +129,8 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 
 
 			//Await kernel
-			event.wait();
-			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, NULL);
+			std::vector<cl::Event> runEvents = { event_run };
+			queue.enqueueReadBuffer(resultBuffer, CL_TRUE, 0, sizeof(int), &result, &runEvents);
 
 			//Check match
 			if (result > 0) //Step out: match
@@ -136,8 +142,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 			{
 				lineCount += i;
 				i = cline;
-				//printf("%u\n", lineCount);
-			}			
+			}
 		}
 
 		auto stopTime = high_resolution_clock::now();
@@ -160,7 +165,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 			char* res = &inputBuffers[!bufferid][(result - 1) * MAX_KEY_SIZE];
 			
 			//Remove line break
-			for (int i = 0; i < MAX_KEY_SIZE; i++)
+			for (unsigned int i = 0; i < MAX_KEY_SIZE; i++)
 			{
 				if (res[i] == '\n')
 				{
@@ -172,7 +177,7 @@ std::string GPUController::crackSingle(const std::string& infileName, const std:
 			outString = std::string(res);
 
 			printf("===============\nMatch found.\n");
-			printf("Key: '%s'\n", res);			
+			printf("Key: '%s'\n", res);
 			printf("Line: %d\n===============\n", lineCount);
 		}
 		

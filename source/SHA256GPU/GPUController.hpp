@@ -27,23 +27,21 @@ class GPUController
 {
 private:
 	//Constants
-	size_t MAX_KEY_SIZE = 24 + 1; //24: char, 1: (c string null)
+	unsigned int MAX_KEY_SIZE = 24 + 1; //24: char, 1: (c string null)
 	const size_t HASH_UINT_COUNT = 8; //256 bit / 32 bit ints
 	const size_t HASH_UINT_SIZE = HASH_UINT_COUNT * sizeof(cl_uint); //byte size of hash uints array
 	const size_t HASH_CHAR_SIZE = 65 * sizeof(char); //64: (hash) + 1: (c string null)
 	
-	//Assigned by contructor
-	cl::Platform platform;
-	cl::Device device;	
-	cl::Context context;
-	cl::CommandQueue queue;
-	int platformId = 0;
-	int deviceId = 0;
-
-	//Assigned by kernel compiler
-	cl::Program program;
-	cl::Kernel kernel;
-	int threadSize = 0;
+	
+	cl::Platform platform; //Device platform
+	cl::Device device; //Used device
+	cl::Context context; //Device context
+	cl::CommandQueue queue; //Current command queue
+	int platformId = 0; //Platform identifier
+	int deviceId = 0; //Device identifier
+	cl::Program program; //Compiled kernel program
+	cl::Kernel kernel; //Compiled kernel
+	int threadSize = 0; //Number of keys in one thread
 	
     
 public:
@@ -58,6 +56,13 @@ public:
 	 */
 	GPUController(const KernelProperties& props);
 
+	/**
+	 * Deletes an instance of GPUController.
+	 */
+	~GPUController()
+	{
+		
+	}
 
 
 	/**

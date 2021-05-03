@@ -16,7 +16,7 @@ std::string GPUController::hashSingle(const std::string& key)
 
 		
 		//Prepare input
-		cl_uint length = key.length();
+		cl_uint length = (cl_uint)key.length();
 		const char* ckey = key.c_str();
 
 		//Create memory buffers

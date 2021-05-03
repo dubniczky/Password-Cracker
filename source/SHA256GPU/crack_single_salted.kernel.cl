@@ -75,27 +75,33 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global uint* res
     }
 
     //Pad remaining uint
-    if (mod == 0)
+    switch (mod)
     {
-        W[qua] = 0x80000000;
-    }
-    else if (mod == 1)
-    {
-        W[qua] = (key[qua * 4]) << 24;
-        W[qua] |= 0x800000;
-    }
-    else if (mod == 2)
-    {
-        W[qua]  = (key[qua * 4]) << 24;
-        W[qua] |= (key[qua * 4 + 1]) << 16;
-        W[qua] |= 0x8000;
-    }
-    else
-    {
-        W[qua] = (key[qua * 4]) << 24;
-        W[qua] |= (key[qua * 4 + 1]) << 16;
-        W[qua] |= (key[qua * 4 + 2]) << 8;
-        W[qua] |= 0x80;
+        //l = n * 4 + 0
+        case 0:
+            W[qua] = 0x80000000;
+            break;
+
+        //l = n * 4 + 3
+        case 3:
+            W[qua]  = (key[qua * 4 + 0]) << 24;
+            W[qua] |= (key[qua * 4 + 1]) << 16;
+            W[qua] |= (key[qua * 4 + 2]) << 8;
+            W[qua] |= 0x80;
+            break;
+
+        //l = n * 4 + 2
+        case 2:
+            W[qua]  = (key[qua * 4 + 0]) << 24;
+            W[qua] |= (key[qua * 4 + 1]) << 16;
+            W[qua] |= 0x8000;
+            break;
+
+        //l = n * 4 + 1
+        case 1:
+            W[qua]  = (key[qua * 4 + 0]) << 24;
+            W[qua] |= 0x800000;
+            break;
     }
 
     W[15] = length * 8; //Add key length
@@ -141,10 +147,10 @@ kernel void sha256crack_single_salted_kernel(global char* keys, global uint* res
 
 
     //Verify result
-    if (A + H0 == HASH_0 && B + H1 == HASH_1 &&
-        C + H2 == HASH_2 && D + H3 == HASH_3 &&
-        E + H4 == HASH_4 && F + H5 == HASH_5 &&
-        G + H6 == HASH_6 && H + H7 == HASH_7)
+    if (A == HASH_0 - H0 && B == HASH_1 - H1 &&
+        C == HASH_2 - H2 && D == HASH_3 - H3 &&
+        E == HASH_4 - H4 && F == HASH_5 - H5 &&
+        G == HASH_6 - H6 && H == HASH_7 - H7)
     {
         *result = globalID + 1;
     }

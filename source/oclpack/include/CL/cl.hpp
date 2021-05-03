@@ -187,6 +187,8 @@
 # include <alloca.h>
 #endif // linux
 
+#pragma warning( disable : 4290 )
+
 #include <cstring>
 
 /*! \namespace cl

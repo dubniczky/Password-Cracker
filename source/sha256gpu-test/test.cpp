@@ -14,7 +14,7 @@
 #include "../sha256gpu/crackSingle.cpp"
 #include "../sha256gpu/crackSingleSalted.cpp"
 #include "../sha256gpu/platformDetails.cpp"
-#include "../sha256gpu/LinkedList.hpp"
+#include "../sha256gpu/ArgList.hpp"
 
 #pragma comment(lib, "OpenCL.lib")
 
@@ -49,7 +49,7 @@ namespace tests
 		{
 			GPUController* gc = new GPUController();
 			Assert::IsNotNull(gc);
-			Assert::IsTrue(gc->attachDevice());
+			Assert::IsTrue(gc->attachDevice({}));
 
 			delete gc;
 		}
@@ -58,7 +58,7 @@ namespace tests
 		{
 			//Load
 			GPUController* gc = new GPUController();
-			gc->attachDevice();
+			gc->attachDevice({});
 
 			//Hash
 			Assert::AreEqual(std::string("b493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"), gc->hashSingle("banana"));
@@ -80,7 +80,7 @@ namespace tests
 		{
 			//Load
 			GPUController* gc = new GPUController();
-			gc->attachDevice();
+			gc->attachDevice({});
 
 			//Hash
 			Assert::AreEqual(std::string("9c9e82db146a9bfe73b43aebfa89cd889a4fccc6fe916a66dcd497ecc4c182a2"), gc->hashSingleSalted("encloses", "Hf45DD"));
@@ -97,7 +97,7 @@ namespace tests
 		{
 			//Load
 			GPUController* gc = new GPUController();
-			gc->attachDevice();
+			gc->attachDevice({});
 
 			//Crack
 			std::string pass100k = "../../../../passwords/passwords-100k.txt";
@@ -112,6 +112,14 @@ namespace tests
 			Assert::AreEqual(std::string(""),
 				gc->crackSingle(pass100k, "1b72955fcf8258e459e16961bde674e7a364b4d85bce939eea774dd7250de06a"));
 
+			//Invalid character
+			Assert::AreEqual(std::string(""),
+				gc->crackSingle(pass100k, "k493d48364afe44d11c0165cf470a4164d1e2609911ef998be868d46ade3de4e"));
+
+			//Short hash
+			Assert::AreEqual(std::string(""), 
+				gc->crackSingle(pass100k, "c79c99dded78b97103916e94e5bc052d0b881ad2da896674bda1b1830e35"));
+
 			delete gc;
 		}
 
@@ -120,7 +128,7 @@ namespace tests
 		{
 			//Load
 			GPUController* gc = new GPUController();
-			gc->attachDevice();
+			gc->attachDevice({});
 
 			//Crack
 			std::string pass100k = "../../../../passwords/passwords-100k.txt";
@@ -150,7 +158,7 @@ namespace tests
 
 		TEST_METHOD(Creating)
 		{
-			LinkedList<std::string>* ll = new LinkedList<std::string>();
+			ArgList* ll = new ArgList();
 			Assert::IsNotNull(ll);
 
 			delete ll;
@@ -158,7 +166,7 @@ namespace tests
 
 		TEST_METHOD(Filling)
 		{
-			LinkedList<std::string>* ll = new LinkedList<std::string>();
+			ArgList* ll = new ArgList();
 
 			ll->add("a");
 			ll->add("b");
@@ -171,7 +179,7 @@ namespace tests
 
 		TEST_METHOD(Popping)
 		{
-			LinkedList<std::string>* ll = new LinkedList<std::string>();
+			ArgList* ll = new ArgList();
 
 			ll->add("x");
 			ll->add("y");
@@ -192,7 +200,7 @@ namespace tests
 
 		TEST_METHOD(Exporting)
 		{
-			LinkedList<std::string>* ll = new LinkedList<std::string>();
+			ArgList* ll = new ArgList();
 
 			ll->add("a");
 			ll->add("b");

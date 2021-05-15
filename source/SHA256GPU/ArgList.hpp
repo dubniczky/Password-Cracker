@@ -109,7 +109,7 @@ public:
 	}
 
 	/**
-	 * Returns if the first item in the ArgList matches the given string.
+	 * Returns whether the first item in the ArgList matches the given string.
 	 * @param match String to match.
 	 * @return True if the given string matches the first item, false if no match or empty list.
 	 */

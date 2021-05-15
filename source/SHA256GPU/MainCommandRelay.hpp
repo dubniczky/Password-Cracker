@@ -33,7 +33,7 @@ enum class RelayResult
 	RAttach = 5
 };
 
-class MainCommandRelay
+static class MainCommandRelay
 {
 public:
 	//Level 0 relay

@@ -1,10 +1,10 @@
 \documentclass[
-	%parspace, % Térköz bekezdések közé / Add vertical space between paragraphs
-	%noindent, % Bekezdésének első sora ne legyen behúzva / No indentation of first lines in each paragraph
-	%nohyp, % Szavak sorvégi elválasztásának tiltása / No hyphenation of words
-	%twoside, % Kétoldalas nyomtatás / Double sided format
-	%draft, % Gyorsabb fordítás ábrák rajzolása nélkül / Quicker draft compilation without rendering images
-	%final, % Teendők elrejtése / Set final to hide todos
+	%parspace, % Add vertical space between paragraphs
+	%noindent, % No indentation of first lines in each paragraph
+	%nohyp, % No hyphenation of words
+	%twoside, % Double sided format
+	%draft, % Quicker draft compilation without rendering images
+	%final, % Set final to hide todos
 ]{elteikthesis}[2021/02/22]
 
 % Packages
@@ -12,8 +12,11 @@
 \usepackage{float}
 \usepackage[final]{pdfpages}
 \usepackage{multicol}
-%\usepackage[pdftex]{graphicx}
+\usepackage{algorithm,algpseudocode}
+%\usepackage[noend]{algpseudocode}
 
+
+%Defined coding languages
 \lstdefinelanguage{JavaScript}{
   keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
   keywordstyle=\color{blue}\bfseries,
@@ -39,7 +42,7 @@
 
 % Superivsor's metadata
 \supervisor{Eichhardt Iván} % Internal supervisor's name
-\affiliation{okatató, PhD} % Internal supervisor's affiliation
+\affiliation{adjunktus, PhD} % Internal supervisor's affiliation
 
 % University's metadata
 \university{Eötvös Loránd Tudományegyetem} % University's name
@@ -68,6 +71,7 @@
 % Title page (mandatory)
 \maketitle
 %\topicdeclaration
+\includepdf[]{documents/declaration.pdf}
 
 
 % Table of contents (mandatory)
@@ -75,21 +79,29 @@
 \cleardoublepage
 
 % Main content
-\input{chapters/intro.tex}
+\input{chapters/introduction.tex}
 \cleardoublepage
 
 \input{chapters/user.tex}
 \cleardoublepage
 
-\input{chapters/impl.tex}
+\input{chapters/implementation.tex}
 \cleardoublepage
 
-\input{chapters/sum.tex}
+\input{chapters/test.tex}
 \cleardoublepage
 
-% Appendices - useful for detailed information in long tables, many and/or large figures, etc.
-\appendix
-\input{appendices/sim.tex}
+\input{chapters/summary.tex}
+\cleardoublepage
+
+\input{chapters/specthanks.tex}
+\cleardoublepage
+
+
+% Ábrajegyzék (opcionális) - 3-5 ábra fölött érdemes
+% List of figures (optional) - useful over 3-5 figures
+\addcontentsline{toc}{chapter}{\lstfigurelabel}
+\listoffigures
 \cleardoublepage
 
 % Irodalomjegyzék (kötelező)
@@ -98,26 +110,5 @@
 \printbibliography[title=\biblabel]
 \cleardoublepage
 
-% Ábrajegyzék (opcionális) - 3-5 ábra fölött érdemes
-% List of figures (optional) - useful over 3-5 figures
-\addcontentsline{toc}{chapter}{\lstfigurelabel}
-\listoffigures
-\cleardoublepage
-
-% Táblázatjegyzék (opcionális) - 3-5 táblázat fölött érdemes
-% List of tables (optional) - useful over 3-5 tables
-\addcontentsline{toc}{chapter}{\lsttablelabel}
-\listoftables
-\cleardoublepage
-
-% Forráskódjegyzék (opcionális) - 3-5 kódpélda fölött érdemes
-% List of codes (optional) - useful over 3-5 code samples
-\addcontentsline{toc}{chapter}{\lstcodelabel}
-\lstlistoflistings
-\cleardoublepage
-
-% Jelölésjegyzék (opcionális)
-% List of symbols (optional)
-%\printnomenclature
 
 \end{document}

@@ -1,28 +1,24 @@
-\chapter{Fejlesztői dokumentáció} % Developer guide
+\chapter{Fejlesztői dokumentáció}
 \label{ch:impl}
 
-A tesztek futtatásához (amennyiben nincs egyéb meghatározva) egy asztali számítógépet használtam a következő paraméterekkel:
 
-\begin{table}[h]
-\centering
-    \begin{tabular}{|l|l|l|}
-        \hline
-        \textbf{Megnevezés} & \textbf{Modell} & \textbf{Megjegyzés} \\
-        \hline
-        Alaplap & ASUS Prime X470-PRO & \\
-        \hline
-        CPU & Ryzen 7 2700X 8c/16t 4.00Ghz & alap órajel \\
-        \hline
-        RAM & Corsair Vengeance 2x8GB 2400Mhz DDR4 dual channel & \\
-        \hline
-        GPU & Nvidia Geforce GTX 1070 & alap órajel \\
-        \hline
-        SSD & Samsung 970 EVO 250GB & NVMe slot \\
-        \hline
-    \end{tabular}
-    \caption{A tesztekhez használt számítógép paraméterei.}
-\end{table}
+% ------------------- Program structure
+\section{A Program Felépítése}
 
+
+\begin{figure}%[H]
+    \centering 
+    \includegraphics[width=\textwidth]{images/diagrams/uml-class.pdf}
+    \caption{A program UML osztálydiagramja.}
+\end{figure}
+
+A program futása a MainCommandRelay statikus osztályban kezdődik. Az itt található statikus relay metódus meghívása után az megpróbálja a felhasználótól futtatási paraméterként kapott parancsot értelmezni az ArgList segítségével. Ez alapján elkészít egy KernelProperties objektumot, amely egy pontos leírást ad a feladat tulajdonságairól a GPUController számára. Ennek használatával elkészíti a GPUControllert, majd futtatja a parancsnak megfelelő metódust.
+
+A GPUController valamely feladatának futása után, vagy hiba esetén, a meghívott relay metódus visszatér egy RelayResult-al, amely a futás konklúzióját tartalmazza. Ezt az értéket egész számként visszaadja az operációs rendszernek a main függvény visszatérési értékeként, így az nyomon tudja követni, hogy fellépett-e bármilyen hiba a futás során.
+
+A GPUController egy feladat futtatását az OpenCL kernel fájlok betöltésével, konfigurálásával, majd fordításával kezdi. Ezeket hozzáköti a felhasználó által meghatározható eszközhöz és amennyiben minden megfelel, futtatni kezdi. Ez a futás lehet egyszálú gyors, mint például a hashSingle esetében, vagy sokszálú és időigényes például a crackSingle esetében.
+
+Amennyiben az adott művelet futása sikeresen zárult, az az eredménnyét visszaadja szöveg vagy egész szám formájában.
 
 % ------------------- OpenCL Basics
 \section{Az OpenCL}
@@ -41,33 +37,34 @@ Heterogén rendszer: több processzor együttműködésén alapuló számítóg�
 uint: egy 32 biten tárolt előjel nélküli (csak pozitív) egész szám, amelyen minden műveletet $mod \; 2^{32}$ értelmezünk.
 \end{definition}
 
-
-Az OpenCL egy nyílt forráskódú, cross-platform keretrendszer olyan homogén számítógépes környezetekhez, ahol a CPU és GPU vagy egyéb processzorok és ezek szálai párhuzamos együttműködésére van szükség. \cite{munshi2011opencl}.
-
-
 \begin{definition}
 Hoszt (host): Több processzoros rendszerek esetén azon eszköz, amely a többi irányításáért felel.
 \end{definition}
 
 \begin{definition}
-Eszköz (device): Több processzoros rendszerek esetén azon eszköz, amely a hoszttól kapott feladatokat ellátja.
+Eszköz (device): Több processzoros rendszerek esetén azon eszköz, amely a hoszttól kapott feladatokat elvégzi.
+\end{definition}
+
+\begin{definition}
+H/s: Hash per second. Egy rendszeren átlagosan egy másodperc alatt elkészített hash-ek számát mutatja egy adott algoritmussal. A H/s a feltörésre is használható, ugyanis futási időben minimális a kettő között a különbség.
 \end{definition}
 
 
-A keretrendszer egy saját programozási nyelvvel rendelkezik, mely a C nyelvből fejlődött ki. Úgynevezett kerneleket tudunk írni, amelyekez az eszközökön tudunk futtatni. A projekt során a C++ API-t fogom alkalmazni, azonban sok nyelvhez elérhető hasonló könyvtár.
+Az OpenCL egy nyílt forráskódú, cross-platform keretrendszer olyan homogén számítógépes környezetekhez, ahol a CPU és GPU vagy egyéb processzorok és ezek szálai párhuzamos együttműködésére van szükség. \cite{munshi2011OpenCL}.
 
-Az OpenCL keretrendszer inicializálásakor megadható hogy melyik eszközöket használjuk, illetve milyen szerepet fognak ezek betölteni. Szerepe alapján a hardvereket hoszt és eszköz kategóriákra bonthatjuk. Emellett fontos különbség az adott hardverek platform-ja. Minden platform különböző implementációját futtatja a az OpenCL keretrendszernek (pl.: Intel, AMD, Nvidia).
+A keretrendszer egy saját programozási nyelvvel rendelkezik, mely a C nyelvből származtatott. Úgynevezett kerneleket tudunk írni, amelyeket az eszközökön tudunk futtatni. A projekt során a C++ API-t fogom alkalmazni, azonban sok nyelvhez elérhető hasonló könyvtár.
+
+Az OpenCL keretrendszer inicializálásakor megadható, hogy melyik eszközöket használjuk, illetve milyen szerepet fognak ezek betölteni. Szerepe alapján a hardvereket hoszt és eszköz kategóriákra bonthatjuk. Emellett fontos különbség az adott hardverek platform-ja. Minden platform különböző implementációját futtatja a az OpenCL keretrendszernek (pl.: Intel, AMD, NVidia).
 
 A program fordításának idejében nem ismerjük a jövőbeli felhasználó számítógépének pontos paramétereit, holott ez elengedhetetlen információ a fordító számára. Erre két megoldás közül tudunk választani:
-
-
+%
 \begin{enumerate}
   \item A kódot minden napjainkban használt eszközre optimalizálva lefordítjuk, illetve a későbbiekben amennyiben ez változik, új verziókat készítünk.
   \item Nem fordítjuk azonnal az eszközre szánt kernel kódot, ehelyett azt eltároljuk a program számára elérhető helyen, majd amikor a felhasználó először futtatja a programot, lefordítjuk a kernelt.
 \end{enumerate}
 
 
-Látszik hogy az első megoldás szinte kivitelezhetetlen, hiszen naprakészen tartani több ezer vagy akár tízezer konfigurációt lényegesen nagyobb költséggel jár, mint a felhasználó számára az első alkarommal várni akár kevesebb mint egy másodpercet hogy leforduljon a kód. A második megoldás hátránya azonban, hogy nem tudjuk elrejteni a kernel kódunkat és az könnyen másolható lesz. Ezzel szemben a kód futásidpőben szerkeszthető marad, amely tulajdonságát ki fogom használni a program során.
+Látható, hogy az első megoldás szinte kivitelezhetetlen, hiszen naprakészen tartani több ezer vagy akár tízezer konfigurációt lényegesen nagyobb költséggel jár, mint a felhasználó számára az első alkarommal várni akár kevesebb mint egy másodpercet hogy leforduljon a kód. A második megoldás hátránya azonban, hogy nem tudjuk elrejteni a kernel kódunkat és az könnyen másolható lesz \footnote{Erre egy részleges megoldást nyújthat a Spir-V}. Ezzel szemben a kód futásidpőben szerkeszthető marad, amely tulajdonságát fontos lesz a program optimalizálása során.
 
 
 \lstset{caption={Tetszőleges méretű vektor összeadása OpenCL kernellel (forrás: Elte IK Computer Graphics GPGPU)}, label=src:cpp}
@@ -90,10 +87,10 @@ A szakdolgozat jelentős részét képzi az eszköz oldali parallel kód futás�
 
 Videókártyák esetén egy potenciális \SI{50}{\percent} lassítást jelenthet az elágazások használata. A futó szálak egyszerre egy parancsot képesek elvégezni, így aztán amíg bizonyos szálak egy elágazás hosszabb igaz oldalával dolgoznak, addig a többinek várni kell azokra még akkor is, ha gyorsabban végeztek a második felével. Ez alapján mindig elkerülöm a balanszolatlan hosszúságú elágazásokat, de igyekszem őket ahol csak lehetséges nélkülözni.
 
-Szintén nagyobb teljesítményromálssal járhat a ciklusok használata. Egy ciklus minden lépése egy memóriacím növelésével, illetve egy elágazással jár. Emellett a cikluson belül felhasznált iterátor változót minden lépésnél fel kell használni akár műveletre (mely emiatt nem optimalizálható a fordíó által), vagy egy memóriacím lekérdezésére, amely az iterációs változó volatilitása miatt nem kerülhet a előre cache-be. Erre nyilvánvaló megoldást jelenthet az elkerülésük, vagy a ciklusok fixált lépésszámúvá tétele, majd a kiterítése. Pl:
+Szintén nagyobb teljesítményromálssal járhat a ciklusok használata. Egy ciklus minden lépése egy memóriacím növelésével, illetve egy elágazással jár. Emellett a cikluson belül felhasznált iterátor változót minden lépésnél fel kell használni akár műveletre (mely emiatt nem optimalizálható a fordító által), vagy egy memóriacím lekérdezésére, amely az iterációs változó volatilitása miatt nem kerülhet a előre cache-be. Erre nyilvánvaló megoldást jelenthet az elkerülésük, vagy a ciklusok fixált lépésszámúvá tétele, majd a kiterítése. Pl:
 
 
-\lstset{caption={A ciklus unroll előtt}, label=src:cpp}
+\lstset{caption={A ciklus unroll előtt.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
 #pragma unroll
 for (int i = 0; i < 4; i++)
@@ -106,7 +103,7 @@ for (int i = 0; i < 4; i++)
 A \textbf{\#pragma unroll} kulcsszó jelzi a fordítónak, hogy a következő ciklus kiteríthető. Ez természetesen csak fordítás időben konstans hosszúságú ciklusok esetén alkalmazható.
 
 
-\lstset{caption={A ciklus unroll után}, label=src:cpp}
+\lstset{caption={A ciklus unroll után.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
 keys[0] = 10;
 keys[1] = 20;
@@ -129,7 +126,7 @@ A kiterített kód-ban előre látszik hogy a jelenlegi lépés során melyik me
 % ------------------- SHA 256 Arithmetics
 \section{Az SHA-256 Aritmetikája}
 
-A hash kiszámolása közben több előre definiált műveletet alkalmazunk, amelyek együttes működése elősegíti a ténylegesen véletlenszerűnek tűnő eredmény előidézését.
+A hash kiszámolása közben több olyan műveletet alkalmazunk, amelyek együttes működése elősegíti a ténylegesen véletlenszerűnek tűnő eredmény előidézését.
 
 
 
@@ -142,7 +139,7 @@ Logikai operátorok: AND, OR, XOR, NOT sorrendben a következő jelekkel feltün
 \end{definition}
 
 \begin{definition}
-Integer összeadás: $A + B = A + B \bmod 2^{32} $. A modolás hatására a memóriaszektoron túlcsorduló bitek eltűnnek és minimum értékről kezdődik újra a számolás.
+Integer összeadás: $A + B = A + B \bmod 2^{32} $. A modulusz hatására a memóriaszektoron túlcsorduló bitek eltűnnek és minimum értékről kezdődik újra a számolás.
 \end{definition}
 
 \begin{definition}
@@ -185,10 +182,10 @@ Balanszolt bitművelet: Olyan bitműveletek, melyek interpretációjában azonos
             0 & 1 & 0 \\
         \end{tabular}
     \end{tabular}
-    \caption{Három bináris függvény ereménye.}
+    \caption{Három bináris függvény eredménye.}
 \end{table}
 
-A példákból látszik hogy nem minden bináris függvény esetén kapunk arányos mennyiségű igaz és hamis értéket. Ez természetesn azt okozza hogy n lépés esetén az eredmény konvergálni fog a magasabb esélyű értékhez.
+A példákból látszik hogy nem minden bináris függvény esetén kapunk arányos mennyiségű igaz és hamis értéket. Ez természetesen azt okozza hogy n lépés esetén az eredmény konvergálni fog a magasabb esélyű értékhez.
 
 \begin{table}[H]
 \centering
@@ -236,7 +233,7 @@ Példaként válasszunk véletlenszerű 8 bites egész számokat: $[147, 71, 11,
 \end{table}
 
 
-Látható, hogy már 4 művelet elvégzése után az $\land$ művelet balanszolatlansága következményeként a kimenet csupa hamisból áll. Ezzel szemben a $\oplus$ művelet esetén maradt 3 igaz bit, amely pontosan egy-el kevesebb mint a fele. A bemenet 32 bitje közül 15 igaz volt, ami szinén alulról közelíti a felét.
+Látható, hogy már 4 művelet elvégzése után az $\land$ művelet balanszolatlansága következményeként a kimenet csupa hamisból áll. Ezzel szemben a $\oplus$ művelet esetén maradt 3 igaz bit, amely pontosan egy-el kevesebb mint a fele. A bemenet 32 bitje közül 15 igaz volt, ami szintén alulról közelíti a felét.
 
 
 
@@ -265,7 +262,7 @@ Az algoritmus a következő funkciókat fogja használni, melyek együttes műk�
 \bigbreak
 
 
-Az algoritmus kiindulópontjaként véletlenszerű számokat kellett választani. A tényleges véletlenszerűség elengedhetetlen részét képezi szinte minden titkosító eljárásnak. Ezeket számítógép nem tudja előállítani valamilyen külső bemenet megadása nélkül. Például a random.org weboldala atmoszférikus zaj alapján generálja a véletlenszerű számokat. Ennél egy egyszerűbb módszer volt az első 64 prímszám köbgyökének a tört részét nek az első 32 bitjét venni.
+Az algoritmus kiindulópontjaként véletlenszerű számokat kellett választani. A tényleges véletlenszerűség elengedhetetlen részét képezi szinte minden titkosító eljárásnak. Ezeket számítógép nem tudja előállítani valamilyen külső bemenet megadása nélkül. Például a random.org weboldala atmoszférikus zaj alapján generálja a véletlenszerű számokat. Ennél egy egyszerűbb módszer volt az első 64 prímszám köbgyökének a tört részének az első 32 bitjét venni.
 
 
 \bigbreak
@@ -329,9 +326,8 @@ Az eljárás végén a tömörítéshez szükség volt még további 8 darab 32 
 \subsection{Blokkok Számítása}
 
 
-A blokkáalakítás során a teljes üzenetet $n * 512$ bites méretűvé alakítjuk, ahol minden blokk 512 bites lesz. Egy optimalizálásként ezt a lépést részben kihagyhatjuk, hiszen feltételezzük, hogy a megkapott jelszó nem fogja felvenni az egy blokkban rendelkezésre álló 448 bitet (a maradék 64 az eredeti üzenet hossza), amely 56 byte, tehát 64 ascii, vagy 56 UTF-8 karakter tárolására képes. Így aztán egy blokkot készítünk a következőképpen:
-
-
+A blokká alakítás során a teljes üzenetet $n * 512$ bites méretűvé alakítjuk, ahol minden blokk 512 bites lesz. Egy optimalizálásként ezt a lépést részben kihagyhatjuk, hiszen feltételezzük, hogy a megkapott jelszó nem fogja felvenni az egy blokkban rendelkezésre álló 448 bitet (a maradék 64 az eredeti üzenet hossza), amely 56 byte, tehát 64 ASCII, vagy 56 UTF-8 karakter tárolására képes. Így aztán egy blokkot készítünk a következőképpen:
+%
 \begin{enumerate}
     \itemsep-0.5em
     \item Az első bitek az megkapott kulcs karaktereinek a bitjei,
@@ -386,7 +382,7 @@ Beállítás:
 
 \bigbreak
 
-A $(\cdot)$ művelet jelen esetben bináris sorozatok összefűzését jelenti. Az összefűzés során a memóriaterület minden bitjét fejlhasználjuk, nem hagyjuk figyelmen kívül az első igaztól balra található hamisokat. A $H$ változó ebben az esetben egy 256 bites memóriaterületet takar.
+A $(\cdot)$ művelet jelen esetben bináris sorozatok összefűzését jelenti. Az összefűzés során a memóriaterület minden bitjét felhasználjuk, nem hagyjuk figyelmen kívül az első 1-től balra található 0-kat. A $H$ változó ebben az esetben egy 256 bites memóriaterületet takar.
 
 
 
@@ -394,11 +390,10 @@ A $(\cdot)$ művelet jelen esetben bináris sorozatok összefűzését jelenti. 
 \subsection{Kimenet}
 
 
-A $H$ változó értéke konvertálható hexadecimális formába, majd visszamásolható a host memóriába hashelés esetén, vagy összehasonlítható egy előre megkapott 256 bites kulcssal ellenőrzés vagy feltörés esetén. Bitenkénti egyezés esetén elégségesen bizonyítható hogy hashelt kulcs megegyezik a másik hash elkészítésekor használttal, illetve az is hogy bitek kötötti különbség esetén a bementeki kulcsok nem egyeztek meg.
+A $H$ változó értéke konvertálható hexadecimális formába, majd visszamásolható a host memóriába hash-elés esetén, vagy összehasonlítható egy előre megkapott 256 bites kulccsal ellenőrzés vagy feltörés esetén. Amennyiben legalább egy bit eltér a megkapott és a vizsgált hash-ek között, a bemeneti adatok biztosan különböznek. Amennyiben biteknénti az egyezés, ez elégséges bizonyítékként szolgál, hogy a bementei értékek megegyeztek, ugyanis két nem megegyező bemenetre ugyan azt az eredményt kapni elhanyagolható valószínűségű.
 
 A hexadecimális felírási formához először 64 blokkra kell osztani a memóriaterületet, majd a blokkban található 4 bit méretű területekhez hozzárendelni a megfelelő hexadecimális karaktert a következő táblázat alapján
-
-
+%
 \begin{table}[H]
     \centering
     \begin{tabular}{cccc}
@@ -425,13 +420,11 @@ A hexadecimális felírási formához először 64 blokkra kell osztani a memór
     %\caption{safdsafdsafas}
     %\label{tab:djfhbgadjhn}
 \end{table}
-
-
+%
 Ezt egyszerűen meg tudjuk tenni úgy, hogy ha 8 bites számokként tekintjük a 256 bites memóriaterületet, hiszen ez a legkisebb egyedileg címezgető terület, majd minden 8 bites számot logikai $\land$ művelettel éselünk az első vagy második felén csupa 1-ből álló 8 bites számmal. Pl:
 
-Tegyük fel hogy az elsó 8 bites memóriaterület: $10110011$:
-
-
+Tegyük fel hogy, az első 8 bites memóriaterület: $10110011$:
+%
 \begin{table}[H]
     \centering
     \begin{tabular}{rcccl}
@@ -441,9 +434,8 @@ Tegyük fel hogy az elsó 8 bites memóriaterület: $10110011$:
         
     \end{tabular}
 \end{table}
-
-
-Tehát a hexadecimálisan felírható alak: \textbf{4B}. Ezt a folyamatot ismételhetjük 32-szer. Minden iteráció 2 karaktert eredményez, amely 64 karaktert jelent. A 64 hexadecimális karakter pedig megfelel az eredeti specifikációnak. Ezt a feladatot ellájtja a következő kódrész ezt a feladatot oldja meg azzal a különbséggel, hogy 8 bit méretű blokkok helyett a már rendelkezésre álló 32 bites blokkokon fog iterálni. Ez azonban az unroll miatt teljesen lineáris időben fut majd.
+%
+Tehát a hexadecimálisan felírható alak: \textbf{4B}. Ezt a folyamatot ismételhetjük 32-szer. Minden iteráció 2 karaktert eredményez, amely 64 karaktert jelent. A 64 hexadecimális karakter pedig megfelel az eredeti specifikációnak. Ezt a feladatot ellátja a következő kódrész ezt a feladatot oldja meg azzal a különbséggel, hogy 8 bit méretű blokkok helyett a már rendelkezésre álló 32 bites blokkokon fog iterálni. Ez azonban az unroll miatt teljesen lineáris időben fut majd.
 
 
 \lstset{caption={32 bites egész szám tömb hexadecimális karaktersorozattá konvertálása.}, label=src:cpp}
@@ -468,7 +460,7 @@ Az algoritmus bemeneteként megkapja a \textbf{hashInts} 8 darab 32 bites egész
 % Salt
 \subsection{Salt}
 
-A salt hozzáadásával a jelszótörés tovább komplikálódik, hiszen azonos jelszavak különböző salt használatával más ereményt generálnak. A salt egy publikus kulcsnak tekinthető, hiszen a végleges hash-hoz hozzáfűzve tároljuk és minden hashelésnél véletlenszerűen újat generálunk.
+A salt hozzáadásával a jelszótörés tovább komplikálódik, hiszen azonos jelszavak különböző salt használatával más eredményt generálnak. A salt egy publikus kulcsnak tekinthető, hiszen a végleges hash-hoz hozzáfűzve tároljuk és minden hashelésnél véletlenszerűen újat generálunk.
 
 Példa:
 
@@ -500,16 +492,16 @@ Ezeket a salt-okat minden crack esetén a kulcs után fűzzük és így végezz�
 %Parallelism
 \subsection{Alapok}
 
-A párhuzamosítás (parallelizáció) napjainkban az egyik fő módszere a számítógépek teljesítményének növelésére. Egyre nagyobb mennyiségű párhuzamosítható szálat tartalmaznak a mai processzorok, azomban ezek továbbra sem versenyképesek a videókártyák parallel terljesítményével, melyek akár százszor vagy ezerszer annyi műveletet képesek elvégezni, bár valamivel lassabban.
+A párhuzamosítás (parallelizáció) napjainkban az egyik fő módszere a számítógépek teljesítményének növelésére. Egyre nagyobb mennyiségű párhuzamosítható szálat tartalmaznak a mai processzorok, azonban ezek továbbra sem versenyképesek a videókártyák parallel teljesítményével, melyek akár százszor vagy ezerszer annyi műveletet képesek elvégezni, bár valamivel lassabban.
 
-A videókártyák SIMD (Single Instruction, Multiple Data) programozási paradigmát használnak. Ez annyit jelent hogy a kártya minden szála egyszerre egy műveletet képes elvégezni, de azt sok szálon, melyek mindegykike külön adatokkal képes dolgozni.
+A videókártyák SIMD (Single Instruction, Multiple Data) programozási paradigmát használnak. Ez annyit jelent hogy az eszköz ugyan azt az utasítást hajtja végre sokszor több különböző adatra. Ez azt okozza, hogy például elágazások esetén minden lehetőség lefut minden szálon, de csak a választott irány értéke marad meg. Ezen kívül használhatnak SPMD (Single Program, Multiple Data) paradigmát is, amely esetén az egyforma programokat csoportokra bontjuk és ezek párhuzamosan futnak majd, de nem feltétlenül pontosan instrukciónként egyszerre. 
 
 
 
 % Data
 \subsection{Adatmozgatás}
 
-Az egyik fő limitáció az adatok mozgatása, melyet használat előtt be kell töltenünk az eszköz memóriájába, majd az eredményt visszamásolni a host memóriába. Ennek a sebességét sok paraméter befolyásolhatja. Emellett esetünkben a jelszavak feltöréséhez használt jelszó táblázatot is be kell másolnunk először a host memóriába lemezről, amely mégnagyobb limitációt jelent. Emiatt a projekt egyik fő kihívását ezen adatmozgatok parallel elvégzése fogja jelenteni.
+Az egyik fő limitáció az adatok mozgatása, melyet használat előtt be kell töltenünk az eszköz memóriájába, majd az eredményt visszamásolni a host memóriába. Ennek a sebességét sok tényező befolyásolhatja. Emellett esetünkben a jelszavak feltöréséhez használt jelszó táblázatot is be kell másolnunk először a host memóriába lemezről, amely további jelentős limitációt jelent. Emiatt a projekt egyik fő kihívását ezen adatmozgások parallel és aszinkron elvégzése fogja jelenteni.
 
 
 \begin{figure}[H]
@@ -520,7 +512,7 @@ Az egyik fő limitáció az adatok mozgatása, melyet használat előtt be kell 
 \end{figure}
 
 
-Az ábrából látható, hogy amennyiben a hashelés közben történő adatmozgatást nem vesszük figyelembe, összesen 5 különböző alkalommal kell majd másolnunk. Ezen adatmásolások közül a legtöbbet az adatok beolvasása illetve kiírása fogja igényelni. A második leglassabb a host és az eszköz memória közötti mozgatás, így aztán ezeket próbálom a lehető legjobban parallelizálni. Ahogy befejeződött a merevlemezről történő beolvasás és az továbbításra került az eszköz felé, egyből kezdhetjük a következő adatbeolvasást a merevlemezről.
+Az ábrából látható, hogy amennyiben a hashelés közben történő adatmozgatást nem vesszük figyelembe, összesen 5 különböző alkalommal kell majd másolnunk. Ezen adatmásolások közül a legtöbbet az adatok beolvasása, illetve kiírása fogja igényelni. A második leglassabb a host és az eszköz memória közötti mozgatás, így aztán ezeket próbálom a lehető legjobban parallelizálni. Ahogy befejeződött a merevlemezről történő beolvasás és az továbbításra került az eszköz felé, egyből kezdhetjük a következő adatbeolvasást a merevlemezről.
 
 
 \begin{figure}[H]
@@ -530,16 +522,22 @@ Az ábrából látható, hogy amennyiben a hashelés közben történő adatmozg
     \label{fig:parallelgpu}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/diagrams/sequence.pdf}
+    \caption{Az adatmozgatás és futtatás szekvenciadiagramja feltörés során.}
+\end{figure}
+
 
 
 % Data
 \subsection{Hashelés}
 
-Az SHA256 algoritmus lépései egy hashen belül nem párhuzamosíthatóak. Az algoritmus így lett elkészítve, hiszen ha parallelizálható lenne akkor könnyebben feltörhető lennei, hiszen:
+Az SHA256 algoritmus lépései egy hashen belül nem párhuzamosíthatóak. Az algoritmus így lett elkészítve, hiszen ha parallelizálható lenne akkor könnyebben feltörhető lenne, hiszen:
 %
 \begin{itemize}
     \item Egy hashelés részei gyorsíthatóak lennének, hiszen egy egy hashen sok szál tudna dolgozni egyszerre, ezzel exponenciálisan gyorsítva a feltörést,
-    \item egy hashelés részekre bontható lenne, azaz bizonyos jelszavak részeinek kiszámolásához nem lenne szükség mindig előről újraszámolni részeket, hiszen azt egyszer már kiszámoltuk.
+    \item egy hashelés részekre bontható lenne, azaz bizonyos jelszavak részeinek kiszámolásához nem lenne szükség mindig előről újra számolni részeket, hiszen azt egyszer már kiszámoltuk.
 \end{itemize}
 %
 Több jelszó hashelése azonban nem függ egymástól, így az egyszerre futtatható feltörések számának kizárólag az eszköz és a beolvasás sebessége szab határt. A jelszavak parallel feltöréséhez szükség van egy fix méretű bemeneti és kimeneti bufferre, amelyen belül a szálak ki tudják számolni a pontos bemeneti és kimeneti pontjukat a következőképp:
@@ -553,11 +551,9 @@ Legyen:
     \item $P_1$ : kimeneti buffer kezdőpontja, mérete: $[N * 65]$
     \item $I : [0 .. N-1]$ jelenlegi szál indexe
 \end{itemize}
-
-
+%
 ekkor a jelenlegi szál:
-
-
+%
 \begin{itemize}
     \itemsep-0.5em
     \item Bemenetének kezdete $ = P_0 + (I * M) $
@@ -565,11 +561,10 @@ ekkor a jelenlegi szál:
     \item Kimenetének kezdete $ = P_1 + (I * 65) $
     \item Kimenetének vége $ = P_1 + (I * 65) + 64 $
 \end{itemize}
-
+%
 A kimeneti hash mérete 64 karakter, melyhez hozzájön egy null vagy enter.
-
-
-\begin{figure}[H]
+%
+\begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{images/pdf/parallel-hashing.pdf}
     \caption{Szálak párhuzamosan dolgoznak a bemeneti kulcs bufferen és a kimeneti hash bufferen.}
@@ -605,7 +600,7 @@ ekkor a jelenlegi szál:
     \item Kimenete $ = P_1 $, vagy nincs kimenet
 \end{itemize}
 
-Alapértelmezetten a kimenet bufferének értéke 0-ról indul. Ha a kimenet a futás után is nulla marad, akkor nem találtunk egyező kulcsot. Ezzel szemben amennyiben az érték megváltozott, akkor tudjuk hogy az adott azonosítójú szál oldotta meg sikeresen a visszafejtést és az értéket ki tudjuk olvasni az előbb betöltött memóriaterületről.
+Alapértelmezetten a kimenet bufferének értéke 0-ról indul. Ha a kimenet a futás után is nulla marad, akkor nem találtunk egyező kulcsot. Ezzel szemben amennyiben az érték megváltozott, akkor tudjuk, hogy az adott azonosítójú szál oldotta meg sikeresen a visszafejtést és az értéket ki tudjuk olvasni az előbb betöltött memóriaterületről.
 
 
 \begin{figure}[H]
@@ -626,10 +621,32 @@ Alapértelmezetten a kimenet bufferének értéke 0-ról indul. Ha a kimenet a f
 % ------------------- Optimization
 \section{C++ Optimalizálás}
 
+Az optimalizáció tesztek futtatásához (amennyiben nincs egyéb meghatározva) egy asztali számítógépet használtam a következő paraméterekkel:
+
+\begin{table}[h]
+\centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Megnevezés} & \textbf{Modell} & \textbf{Megjegyzés} \\
+        \hline
+        Alaplap & ASUS Prime X470-PRO & \\
+        \hline
+        CPU & Ryzen 7 2700X 8c/16t 4.00Ghz & alap órajel \\
+        \hline
+        RAM & Corsair Vengeance 2x8GB 2400Mhz DDR4 dual channel & \\
+        \hline
+        GPU & Nvidia Geforce GTX 1070 & alap órajel \\
+        \hline
+        SSD & Samsung 970 EVO 250GB & NVMe slot \\
+        \hline
+    \end{tabular}
+    \caption{A tesztekhez használt számítógép paraméterei.}
+\end{table}
+
 
 A fejlesztési idő jelentős részét az optimalizálás töltötte ki. Miután volt egy programom, amely képes volt jelszavakat beolvasni és feltörni processzoron és videókártyán is egyből tudtam tesztelni a sebességet. A teszteléshez minden alkalommal egy 4 millió (\num{3735367}) elemű listát használt a program, melynek az utolsó elemeként szerepelt a helyes kulcs (ex-wethouder).
-A futási idő méréséhez a C++ nyelv standard környezetében található chrono könyvtárat használtam, amely képes microsec pontossággal jelezni két utasítás között eltelt időt. Az végleges időkben kizárólag a tényleges feltöréssel töltött idő szerepel, nem tartalmazza az elején az inicializálsát és a fájl megnyitását, illetve a végén az eredmény kiiratását. Ezek ugyanis egyszer történnek csak meg, és tetszőlegesen nagy adattömeg esetén elenyésző a hatásuk.
-A program debug mód kikapcsolásával és x64 architektúrára van építve, illeve a /O2 fordító paranccsal, amely többek között a kódoptimalizálást a futtatható fájl mérete helyett a sebességre fókuszálja.
+A futási idő méréséhez a C++ nyelv standard környezetében található chrono könyvtárat használtam, amely képes microsec pontossággal jelezni két utasítás között eltelt időt. A végleges időkben kizárólag a tényleges feltöréssel töltött idő szerepel, nem tartalmazza az elején az inicializálást és a fájl megnyitását, illetve a végén az eredmény kiíratását. Ezek ugyanis egyszer történnek csak meg, és tetszőlegesen nagy adattömeg esetén elenyésző a hatásuk.
+A program debug mód kikapcsolásával és x64 architektúrára van építve, illetve a /O2 fordító paranccsal, amely többek között a kódoptimalizálást a futtatható fájl mérete helyett a sebességre fókuszálja.
 
 
 \begin{definition}
@@ -637,7 +654,7 @@ Futási Stabilitás: Egy program futás időtartamának relatív eltérése töb
 \end{definition}
 
 \begin{definition}
-Hash per Second (h/s): Egy mértékegység amely egy algoritmus egy másodperc alatt elkészíthető hash kódjainak számára, egy adott hash algoritmus használatával, azonos hardveren és azonos alap kihasználtsággal.
+Hash per Second (H/s): Egy mértékegység, amely egy algoritmus egy másodperc alatt elkészíthető hash kódjainak számára, egy adott hash algoritmus használatával, azonos hardveren és azonos alap kihasználtsággal.
 \end{definition}
 
 
@@ -656,16 +673,16 @@ Az alap tesztet 20 alkalommal futtattam CPU és GPU használatával is. Ezáltal
         \textbf{Eszköz} & \textbf{Salt} & \textbf{Futásidő} & \textbf{Teljesítmény}  \\
         \hline
         \hline
-        \multirow{2}{*}{CPU} & Nem & $\num{105 658 927} \; \mu s \approx \num{106.7}s$ & $\approx \num{35 353} \; h/s$ \\
+        \multirow{2}{*}{CPU} & Nem & $\num{105 658 927} \; \mu s \approx \num{106.7}s$ & $\approx \num{35 353} \; H/s$ \\
                              \cline{2-4}
-                             & Igen & $\num{116 019 598} \; \mu s \approx \num{116.0}s$ & $\approx \num{32 196} \; h/s$ \\
+                             & Igen & $\num{116 019 598} \; \mu s \approx \num{116.0}s$ & $\approx \num{32 196} \; H/s$ \\
                              \hline
                              
-        \multirow{2}{*}{GPU} & Nem & $\num{21 250 652} \; \mu s \approx \num{21.3}s$ & $\approx \num{175 776} \; h/s$ \\
+        \multirow{2}{*}{GPU} & Nem & $\num{21 250 652} \; \mu s \approx \num{21.3}s$ & $\approx \num{175 776} \; H/s$ \\
                              \cline{2-4}
-                             & Igen & $\num{21 490 658} \; \mu s \approx \num{21.5}s$ & $\approx \num{173 814} \; h/s$ \\
+                             & Igen & $\num{21 490 658} \; \mu s \approx \num{21.5}s$ & $\approx \num{173 814} \; H/s$ \\
     \end{tabular}
-    \caption{?}
+    \caption{Első szimuláció eredményei}
 \end{table}
 
 
@@ -673,10 +690,10 @@ Az alap tesztet 20 alkalommal futtattam CPU és GPU használatával is. Ezáltal
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/charts/performance-1.png}
-    \caption{CPU és GPU simán és salt-al történő összehasonlítása az első szimuláció során.}
+    \caption{CPU és GPU alapesetben és salt-al történő összehasonlítása az első szimuláció során.}
 \end{figure}
 
-Látható a szimulációs eremdményekből, hogy a GPU feltörés sebessége jelenleg a CPU megfelelőjének majdnem 550\%-a. Továbbá megfigyelhető az is, hogy a hash alkalmazása nagyobb teljesítmény veszteséget okoz CPU-nál esetén (10\%), mint GPU esetén 1\%. Ez minden bizonnyal annak tudható be, hogy az utóbbinál a videókártyán történik a salt behelyezése a szöveg végére, így ez egy időben akár ezerszer is lefuthat.
+Látható a szimulációs eredményekből, hogy a GPU feltörés sebessége jelenleg a CPU megfelelőjének majdnem 550\%-a. Továbbá megfigyelhető az is, hogy a hash alkalmazása nagyobb teljesítmény veszteséget okoz CPU-nál esetén (10\%), mint GPU esetén 1\%. Ez annak tudható be, hogy az utóbbinál a videókártyán történik a salt behelyezése a szöveg végére, így ez egy időben akár ezerszer is lefuthat.
 
 A GPU-n salt használatával történő feltörés a projekt célja, ezért erre fókuszáltam futási stabilitás tesztelésénél. A teszt során 20 alkalommal futtattam a programot azonos körülmények között.
 
@@ -728,9 +745,8 @@ A GPU-n salt használatával történő feltörés a projekt célja, ezért erre
     \includegraphics[width=\textwidth]{images/charts/performance-1-distribution.png}
     \caption{GPU Salt Feltörés Futásidő Eloszlása milliomod másodpercben számolva.}
 \end{figure}
-
-
-Ebből kiszámolható hogy az adatok szórása (standard deviation) $\sigma = 240\mu s$. Ilyen kis számoknál a programnyelv belső órájának pontossága is közrejátszhat az inkonzisztenciában, ezért a szórás a hibakorlátunk alatt helyezkedik el, tehát kijelenthetjük hogy a jelenlegi algoritmus futásideje stabil.
+%
+Ebből kiszámolható, hogy az adatok szórása (standard deviation) $\sigma = 240\mu s$. Ilyen kis számoknál a programnyelv belső órájának pontossága is közrejátszhat az inkonzisztenciában, ezért a szórás a hibakorlátunk alatt helyezkedik el, tehát kijelenthetjük hogy a jelenlegi algoritmus futásideje stabil.
 
 
 
@@ -741,16 +757,21 @@ Ebből kiszámolható hogy az adatok szórása (standard deviation) $\sigma = 24
 
 Jelenleg az adatok beolvasása az \ref{fig:lineargpu} ábrának megfelelően zajlik, tehát megtörténik egy adatszegmens beolvasása, amely továbbításra kerül a feltörésre használt eszköz számára majd az eredmény megérkezését követően elkezdődik a következő beolvasás. Ezen természetesen tudunk javítani a  \ref{fig:parallelgpu} ábrának megfelelően. Erre egy dupla bufferezéses megoldást alkalmaztam, amely esetén a beolvasott adatoknak két egyforma méretű buffer lett létrehozva. Ezek legyenek $B_1, B_2, B_c, B_o \; (current, other)$
 %
-\begin{enumerate}
-    \itemsep-0.5em
-    \item $ B_c := B_1, B_o := B_2 $
-    \item $ read(B_c) $
-    \item $ crack(B_c) $ \& $ read(B_o) $
-    \item $ swap(B_c, B_o) $
-    \item back to 3.
-\end{enumerate}
 
-A bufferek méretének kiválasztását nem lehet fordításnál eldönteni, hiszen attól függnek, hogy a feltörésre használt rendszer adatok olvasása vagy az eszköz sebessége a kisebb keresztmetszet. Ezért a bufferek méretének megválasztásást a felhasználóra bízzuk, azomban a program mindenképpen választ magának egy alapértelmezett értéket, amennyiben egyéb utasítást nem kap. 
+\begin{algorithm}[H]
+    \begin{algorithmic}[1]
+    \State $ B_c := B_1, B_o := B_2 $ \;
+    \State $ read(B_c) $ \;
+    \While{not eof() and not found()}
+        \State $ crack(B_c) $ \& $ read(B_o) $ \;
+        \State $ swap(B_c, B_o) $\;
+    \EndWhile
+    \end{algorithmic}
+ 
+ \caption{Double Buffer lépések}
+\end{algorithm}
+
+A bufferek méretének kiválasztását nem lehet fordításnál eldönteni, hiszen attól függnek, hogy a feltörésre használt rendszer adatok olvasása vagy az eszköz sebessége a kisebb keresztmetszet. Ezért a bufferek méretének megválasztásást a felhasználóra bízzuk, azonban a program mindenképpen választ magának egy alapértelmezett értéket, amennyiben egyéb utasítást nem kap. 
 
 \begin{table}[H]
     \centering
@@ -759,16 +780,16 @@ A bufferek méretének kiválasztását nem lehet fordításnál eldönteni, his
         \hline
         \hline
         
-        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; h/s$ & & \\
+        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; H/s$ & & \\
         \hline
                             
-        GPU & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; h/s$ & $+550.2\%$ & \\
+        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; H/s$ & $+550.2\%$ & \\
         \hline
         
-        GPU & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{173 814} \; h/s$ & $+9.5\%$ & Double Buffer \\
+        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{190 322} \; H/s$ & $+9.5\%$ & Double Buffer \\
         \hline
     \end{tabular}
-    \caption{Teljesítmény táblázat salt-al és a double buffer hozzáadásával.}
+    \caption{Teljesítmény táblázat a double buffer hozzáadásával.}
 \end{table}
 
 
@@ -807,22 +828,19 @@ Ez a konvertálás természetesen nem fog lassítani a futáson, hiszen megtört
         \hline
         \hline
         
-        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; h/s$ & & \\
+        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; H/s$ & & \\
         \hline
                             
-        GPU & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; h/s$ & $+550.2\%$ & \\
+        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; H/s$ & $+550.2\%$ & \\
         \hline
         
-        GPU & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{173 814} \; h/s$ & $+9.5\%$ & Double Buffer \\
+        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{190 322} \; H/s$ & $+9.5\%$ & Double Buffer \\
         \hline
         
-        GPU & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{174 509} \; h/s$ & $+0.4\%$ & Preprocessor \\
-        \hline
-        
-        GPU & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; h/s$ & $+665.7\%$ & C std IO \\
+        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{191 091} \; H/s$ & $+0.4\%$ & Preprocessor \\
         \hline
     \end{tabular}
-    \caption{Teljesítmény táblázat salt-al és a double buffer hozzáadásával.}
+    \caption{Teljesítmény táblázat a preprocesszor definíciók alkalmazásával.}
 \end{table}
 
 
@@ -853,7 +871,7 @@ infile.close();
 \end{lstlisting}
 
 
-A példán az adatfolyan egy szegmensének beolvasása található. Ez a kód (5-9. sor) ismétlődik egészen addig, amíg elfogy a fájl, vagy az előző beolvasás feltörése sikeresen zárul. Látható hogy a beolvasás során a nyelv az adatokat egy std::fstream objektumon keresztül olvassa be, amelyet egy std::string-ben helyez el. Ezt a string-et végül egy null karakterrel terminált C string-re konvertáljuk és belemásoljuk a buffer megfelelő szegmensébe. Érezhető, hogy ezek felesleges extra műveletek, amelyek a futási idő egy jelentős részét jelenthetik.
+A példán az adatfolyam egy szegmensének beolvasása található. Ez a kód (5-9. sor) ismétlődik egészen addig, amíg elfogy a fájl, vagy az előző beolvasás feltörése sikeresen zárul. Látható hogy a beolvasás során a nyelv az adatokat egy std::fstream objektumon keresztül olvassa be, amelyet egy std::string-ben helyez el. Ezt a string-et végül egy null karakterrel terminált C string-re konvertáljuk és belemásoljuk a buffer megfelelő szegmensébe. Érezhető, hogy ezek felesleges extra műveletek, amelyek a futási idő egy jelentős részét jelenthetik.
 
 Az optimalizáláshoz leváltottam a C++ nyelv által használt iostream és fstream eszközöket a standard C könyvtárra (stdio.h).
 
@@ -874,7 +892,7 @@ fclose(infile);
 \end{lstlisting}
 
 
-Ebben az esetben látszik, hogy a fájlből történő beolvasás azonnal a bufferbe helyezi a szöveget. Egy hátrány, hogy a szövegek nincsenek lezárva null karakterekkel, hanem a sor beolvasója behelyezi a sorok végén található sortörés karaktert. Ezt minden szövegnél ki kell javítani hogy ne tekintse a hash algoritmus az entert is a jelszó részének (hiszen azok nem tartalmazhatjak sortörés karaktert). Ezt azonban a crack-et végző eszköz végzi, így módosítottam hogy a hashelés előtt az eszköz ellenőrzi a szöveg pontos hosszát úgy, hogy null vagy enter karakterig iterál, majd a végére fűzi a salt-ot.
+Ebben az esetben látszik, hogy a fájlból történő beolvasás azonnal a bufferbe helyezi a szöveget. Egy hátrány, hogy a szövegek nincsenek lezárva null karakterekkel, hanem a sor beolvasója behelyezi a sorok végén található sortörés karaktert. Ezt minden szövegnél ki kell javítani hogy ne tekintse a hash algoritmus az entert is a jelszó részének (hiszen azok nem tartalmazhatnak sortörés karaktert). Ezt azonban a crack-et végző eszköz végzi, így módosítottam, hogy a hashelés előtt az eszköz ellenőrzi a szöveg pontos hosszát úgy, hogy null vagy enter karakterig iterál, majd a végére fűzi a salt-ot.
 
 
 \lstset{caption={Fájl sorainak beolvasása C++ fstream eszközökkel.}, label=src:cpp}
@@ -908,22 +926,22 @@ Látható, hogy a kulcs lokális memóriába történő másolása során a jele
         \hline
         \hline
         
-        CPU 1 & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; h/s$ & & \\
+        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; H/s$ & & \\
         \hline
                             
-        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; h/s$ & $+550.2\%$ & \\
+        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; H/s$ & $+550.2\%$ & \\
         \hline
         
-        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{173 814} \; h/s$ & $+9.5\%$ & Double Buffer \\
+        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{190 322} \; H/s$ & $+9.5\%$ & Double Buffer \\
         \hline
         
-        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{174 509} \; h/s$ & $+0.4\%$ & Preprocessor \\
+        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{191 091} \; H/s$ & $+0.4\%$ & Preprocessor \\
         \hline
         
-        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; h/s$ & $+665.7\%$ & Cstdio \\
+        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; H/s$ & $+665.7\%$ & Cstdio \\
         \hline
     \end{tabular}
-    \caption{Teljesítmény táblázat salt-al és a double buffer hozzáadásával.}
+    \caption{Teljesítmény táblázat a C-s beolvasási módszerek alkalmazásával.}
 \end{table}
 
 
@@ -941,7 +959,7 @@ Látható, hogy a kulcs lokális memóriába történő másolása során a jele
 % Compiler settings x64 release
 \subsection{Fordító Beállítások}
 
-Eddig minden teszt x86 rendszerre lett fordítva Debug módban alap optimalizálási beállításokkal MSVC-ben. Ezen lehet javítani első sorban Release módra való átállással és egyéb fordító beállításokkal amelyek a futási sebességet szem előtt tartva végeznek módosításokat az assembly-n. Ehhez átalakítottam a függőségi fát a GPGPU órán tanultakról és integráltam az OpenCL fájlokat a projektbe. Ez önmagában nem működőképes, mert az OpenCL headerek bizonyos deklarációi kizárólag Debug fordítás esetén voltak elérhetőek. Ezeket a limitációkat eltávolítottam ezen műveletek inline metódusokká alakításával.
+Eddig minden teszt x86 rendszerre lett fordítva Debug módban alap optimalizálási beállításokkal MSVC-ben. Ezen lehet javítani első sorban Release módra való átállással és egyéb fordító beállításokkal, amelyek a futási sebességet szem előtt tartva végeznek módosításokat az assembly-n. Ehhez átalakítottam a függőségi fát a GPGPU órán tanultakról és integráltam az OpenCL fájlokat a projektbe. Ez önmagában nem működőképes, mert az OpenCL headerek bizonyos deklarációi kizárólag Debug fordítás esetén voltak elérhetőek. Ezeket a limitációkat eltávolítottam ezen műveletek inline metódusokká alakításával.
 
 Ezek mellett le kellett töltenem az OpenCL előre fordított könyvtárának x64-es verzióját, amelyre a fordító és a linker megfelelő konfigurálásával sikerült átállítani a rendszert. A módok között a Visual Studio program-ban a fordítási beállításoknál lehet váltani.
 
@@ -968,25 +986,25 @@ MSVC_COMPILER_PATH\bin\HostX86\x64\CL.exe /c /I..\oclpack\include\ /Zi /nologo /
         \hline
         \hline
         
-        CPU 1 & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; h/s$ & & \\
+        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; H/s$ & & \\
         \hline
                             
-        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; h/s$ & $+550.2\%$ & \\
+        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; H/s$ & $+550.2\%$ & \\
         \hline
         
-        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{173 814} \; h/s$ & $+9.5\%$ & Double Buffer \\
+        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{190 322} \; H/s$ & $+9.5\%$ & Double Buffer \\
         \hline
         
-        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{174 509} \; h/s$ & $+0.4\%$ & Preprocessor \\
+        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{191 091} \; H/s$ & $+0.4\%$ & Preprocessor \\
         \hline
         
-        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; h/s$ & $+665.7\%$ & Cstdio \\
+        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; H/s$ & $+665.7\%$ & Cstdio \\
         \hline
         
-        GPU 5 & $\num{1 083 921} \; \mu s \approx \num{1.0}s $ & $\approx \num{3 239 422} \; h/s$ & $+279.9\%$ & Release/x64 \\
+        GPU 5 & $\num{1 083 921} \; \mu s \approx \num{1.0}s $ & $\approx \num{3 239 422} \; H/s$ & $+279.9\%$ & Release/x64 \\
         \hline
     \end{tabular}
-    \caption{Teljesítmény táblázat salt-al és a double buffer hozzáadásával.}
+    \caption{Teljesítmény táblázat a release, az x64-os mód és a fordító optimalizálások bekapcsolásával.}
 \end{table}
 
 
@@ -996,22 +1014,25 @@ MSVC_COMPILER_PATH\bin\HostX86\x64\CL.exe /c /I..\oclpack\include\ /Zi /nologo /
 \subsection{Szálméret}
 
 Ezen az optimalizálást nem számolom bele a végleges értékekbe, ugyanis az eddigieknél is kevésbé konzisztens. Általánosan elmondható volt idáig, hogy a pontos teljesítmény nem fog megfelelni két rendszer között, azonban arányaiban megfeleltethető lesz, azaz egy kétszeres teljesítmény növelés nagyjából ugyan ekkora különbséggel jár majd minden rendszeren.
-A programnak megadható a -t kapcsoló használatával, hogy hány kulcsot töltsön fel a memóriába feltörésre egy időben. Az optimális mennyiség sok faktortól függ és ami nálam jelentős terljesítmény növekedést eredményez, az egy másik rendszeren többszörös lassulást jelenthet. Ezért ahelyett hogy egy általános megoldást találnék a problémára, a felhasznlálónak meghagyom a lehetőséget hogy ő döntse el, vagy kísérletezze ki a megfelelő értéket.
-Az én rendszerem esetén a megfelelő érték nagyjából $t = \num{22000}$
+A programnak megadható a -t kapcsoló használatával, hogy hány kulcsot töltsön fel a memóriába feltörésre egy időben. Az optimális mennyiség sok faktortól függ és ami nálam jelentős teljesítmény növekedést eredményez, az egy másik rendszeren többszörös lassulást jelenthet. Ezért ahelyett hogy egy általános megoldást találnék a problémára, a felhasználónak meghagyom a lehetőséget hogy ő döntse el, vagy kísérletezze ki a megfelelő értéket.
+Az én rendszerem esetén a megfelelő érték nagyjából $t = \num{22000}$.
 
-\begin{figure}[H]
+\ref{fig:threadsize-performance} Az ábrán látható hogy $t = \num{5000}$ alatt jelentősen csökken a teljesítmény, hiszen az idő egyre nagyobb részét teszi ki a bufferek mozgatása és a kernel elindítása. A teljesítménykülönbség az én rendszeremen $t = \num{1}$ és $t = \num{22000}$ között 1102 szeres. $t = \num{22000}$ felett lassan romlik a teljesítmény.
+
+\begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{images/charts/thread-size-performance.png}
     \caption{Teljesítmény különbség szálméret arányában az én rendszeremen.}
+    \label{fig:threadsize-performance}
 \end{figure}
 
-Az ábrán látható hogy $t = \num{5000}$ alatt jelentősen csökken a teljesítmény, hiszen az idő egyre nagyobb részét teszi ki a bufferek mozgatása és a kernel elindítása. A teljesítménykülönbség az én rendszeremen $t = \num{1}$ és $t = \num{22000}$ között 1102 szeres. $t = \num{22000}$ felett lassan romlik a teljesítmény.
 
 
-% ------------------- opencl OCL Optimization
+
+% ------------------- OpenCL OCL Optimization
 \section{OpenCL Optimalizálás}
 
-Az OpenCL oldalon is hasonlóan jelentős teljesítmény növelés érhető el a feltörő algoritmus refaktorálásával. Az eredeti kódban vannak felesleges kódok, amelyek nem lesznek használva, illetve optimalizálatlan és egyszerűsíthető részek. Az egyik elsődleges szempont az elágazások eliminálása és balanszolása lesz, ugyanis ezeknél egy videókártyának minden leheőségen végig kell mennie hogy ki tudja elégíteni a lehetőségek számát minden szálra. 
+Az OpenCL oldalon is hasonlóan jelentős teljesítmény növelés érhető el a feltörő algoritmus refaktorálásával. Az eredeti kódban vannak felesleges kódok, amelyek nem lesznek használva, illetve optimalizálatlan és egyszerűsíthető részek. Az egyik elsődleges szempont az elágazások eliminálása és balanszolása lesz, ugyanis ezeknél egy videókártyának minden lehetőségen végig kell mennie hogy ki tudja elégíteni a lehetőségek számát minden szálra. 
 
 
 
@@ -1019,9 +1040,9 @@ Az OpenCL oldalon is hasonlóan jelentős teljesítmény növelés érhető el a
 % Compiler settings x64 release
 \subsection{Lokális Memória}
 
-A beérkező kulcsokat a globális memóriából kapjuk meg, ahol melléjük írjuk a salt-ot, majd onnan másoljuk át a kezdeti bufferbe. Ez azt eredményezi, hogy sok feleselges üres memória másolódik át, illetve többször a lassú globális területen dolgozunk. Erre megoldásként az eszközön létre kell hoznunk egy memóriaterületet, amely tárolja a kulcs és a hash összefűzött szöveget. A dinamikus memóriafoglalás azomban jelentősen lassítana a műveleten, ezért kihasználom azt, hogy előre ismerjük a kulcs maximális hosszát és a salt pontos méretét. Ennek köszönhetően létre lehet hozni előre minden szálon a szükséges területeket, amely minimális számítási költséggel jár. Az adatok átmásolásához végigiterál a program a kapott globális kulcson és átmásolja a karaktereket, majd mögéhelyezi a salt-ot.
+A beérkező kulcsokat a globális memóriából kapjuk meg, ahol melléjük írjuk a salt-ot, majd onnan másoljuk át a kezdeti bufferbe. Ez azt eredményezi, hogy sok felesleges üres memória másolódik át, illetve többször a lassú globális területen dolgozunk. Erre megoldásként az eszközön létre kell hoznunk egy memóriaterületet, amely tárolja a kulcs és a hash összefűzött szöveget. A dinamikus memóriafoglalás azonban jelentősen lassítana a műveleten, ezért kihasználom azt, hogy előre ismerjük a kulcs maximális hosszát és a salt pontos méretét. Ennek köszönhetően létre lehet hozni előre minden szálon a szükséges területeket, amely minimális számítási költséggel jár. Az adatok átmásolásához végigiterál a program a kapott globális kulcson és átmásolja a karaktereket, majd mögéhelyezi a salt-ot.
 
-\lstset{caption={A kucs lokális memóriába másolása az eszközön.}, label=src:cpp}
+\lstset{caption={A kulcs lokális memóriába másolása az eszközön.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
 //Local memory for the key (+1 for terminating null)
 char key[KEY_LENGTH + SALT_LENGTH + 1];
@@ -1058,7 +1079,7 @@ Mivel a jelszó nem tartalmazhat sortörés karaktert, ezért addig vizsgáljuk 
 
 A kulcsot a hasheléshez egy uint tömbbe kell konvertálnunk. Mivel minden karakter 8 bit, ezért pontosan 4 karakter fér bele egy integer-be. Így amíg néggyel egészként osztható a kulcs hossza, pontosan belefér egész mennyiségű int-be.
 
-\lstset{caption={A kucs néggyel egészen osztható részének az uint tömbbe másolása.}, label=src:cpp}
+\lstset{caption={A kulcs néggyel egészen osztható részének az uint tömbbe másolása.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
 //Copy whole uints
 qua = length / 4;
@@ -1072,9 +1093,9 @@ for (uint i = 0; i < qua; i++)
 }
 \end{lstlisting}
 
-Külön kell kezelni azomban amikor a kulcs hossza nem osztható n-el hiszen akkor az utolsó uint utolsó karaktere mögé egy 1-es bitet kell helyezni.
+Külön kell kezelni azonban amikor a kulcs hossza nem osztható n-el hiszen akkor az utolsó uint utolsó karaktere mögé egy 1-es bitet kell helyezni.
 
-Erre egy gyors megoldást biztosít a biteltolás és a négy esetre bontás. Legyen: $K_l$ a kulcs hossa és $S_l$ a salt hossza. Ekkor a négy eset:
+Erre egy gyors megoldást biztosít a biteltolás és a négy esetre bontás. Legyen: $K_l$ a kulcs hossza és $S_l$ a salt hossza. Ekkor a négy eset:
 
 \begin{enumerate}
     \item $K_l + S_l \equiv 0 \; (mod \; 4) \iff n * 4 + 0 = K_l + S_l \; (n \geq 0)$
@@ -1098,9 +1119,8 @@ Ezekben az esetekben másként kell kezelni az utolsó 0-3 karaktert. A szöveg 
     \caption{Az utolsó uint értékének a padding-je a mod érték alapján}
 \end{table}
 
-Ennek a kódja a következőképp néz ki optimalizálva a kernelben:
 
-\lstset{caption={A kucs néggyel nem osztható részének az uint tömbbe másolása.}, label=src:cpp}
+\lstset{caption={A kulcs néggyel nem osztható részének az uint tömbbe másolása.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
 //Pad remaining uint with leading 1 bit
 switch (mod)
@@ -1136,7 +1156,7 @@ switch (mod)
 W[15] = length * 8;
 \end{lstlisting}
 
-Megfigyelhető, hogy a feldolgozás sorrendje 0, 3, 2, 1 a megmaradó nem egész vagy üres uint esetén. Ennek az oka statisztikai gyakoriságból ered. Az általam használt majdnem 4 millió elemű gyakran használt listában a következő hosszúságú jelszavak voltak a leggyakoribbak:
+Megfigyelhető, hogy a feldolgozás sorrendje 0, 3, 2, 1 a megmaradó nem egész vagy üres uint esetén. Ennek az oka statisztikai gyakoriságból ered. Az általam használt majdnem 4 millió elemű gyakran használt listában a jelszavak adoptt hosszúságának a számát összeszámoltam.
 
 \begin{figure}[H]
     \centering
@@ -1147,8 +1167,10 @@ Megfigyelhető, hogy a feldolgozás sorrendje 0, 3, 2, 1 a megmaradó nem egész
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{images/charts/passwords-by-length-group.png}
-    \caption{Jelszavak hosszának gyakorisága mod 3-el számolva. A láthatóság kedvéért a grafikon \num{700000}-nél kezdődik.}
+    \caption{Jelszavak hosszának gyakorisága mod 4-el számolva. A láthatóság kedvéért a grafikon \num{700000}-nél kezdődik.}
 \end{figure}
+
+A grafikonról látható, hogy a legtöbbször használt jelszavak hossza a mod 4 = 0 kategóriába esik. Ennek egy oka lehet, hogy sok weboldal megkövetel legalább 8 karaktert, és páran maximum 16 karaktert jelszónak.
 
 Abban az esetben ha egy szál munkacsoportban (work group) minden elem például mod 0 és 1-re értékelődik ki, akkor nem szükséges a további két csoportot is végigszámolni. Annak érdekében hogy ez az eset a lehető leggyakrabban történjen meg, az elágazásokat a mod 4 sorrendjük alapján rendszereztem.
 
@@ -1159,7 +1181,7 @@ Abban az esetben ha egy szál munkacsoportban (work group) minden elem például
 \subsection{Kiterjesztés és Tömörítés}
 
 
-Az adatok konvertálása után a következő lépés az üzenet kiterjesztése majd tömörítése. Ezeket a legtöbb rendszerben ciklusok végzik, amelyen belül is elágazások találhatók bizonyos műveleteknek. Mivel csak egy blokkal dolgozunk, ezért ezeket statikusan is elvégezhetjük ciklusok kiterítésével. Ehhez szeparálni kell a különböző részeket és konstans hosszúságú ciklusként unroll-olni. Ennek a végeredménye egy különbontott üzenetsor
+Az adatok konvertálása után a következő lépés az üzenet kiterjesztése majd tömörítése. Ezeket a legtöbb rendszerben ciklusok végzik, amelyen belül is elágazások találhatók bizonyos műveleteknek. Mivel csak egy blokkal dolgozunk, ezért ezeket statikusan is elvégezhetjük ciklusok kiterítésével. Ehhez szeparálni kell a különböző részeket és konstans hosszúságú ciklusként unroll-olni. Ennek a végeredménye egy különbontott üzenetsor.
 
 \lstset{caption={Az üzenetsor kiterjesztése a kezdeti kulcsból.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
@@ -1174,9 +1196,9 @@ for (uint i = 16; i < 64; i++)
 
 Jelen esetben a sig0(x) és sig1(x) függvények rendre a $\sigma_0(x)$ és $\sigma_1(x)$ függvényeknek felelnek meg. Az első 15 elem az üzenetet és annak hosszát tárolja, ezért a kiterjesztés 16-tól kezdődik.
 
-Ennek a kódnak a kiemelésével a tömörírést szintén egy kiterített ciklusban tudjuk használni:
+Ennek a kódnak a kiemelésével a tömörírést szintén egy kiterített ciklusban tudjuk használni \ref{src:compress}.
 
-\lstset{caption={Az üzenetsor tömörítése a kezdeti kulcsból.}, label=src:cpp}
+\lstset{caption={Az üzenetsor tömörítése a kezdeti kulcsból.}, label=src:compress}
 \begin{lstlisting}[language={C++}]
 //Prepare compression
 A = H0;
@@ -1215,14 +1237,13 @@ Látható, hogy az unroll-ok használata miatt nincsen ciklus, sem elágazás a 
 % Compiler settings x64 release
 \subsection{Összehasonlítás}
 
-Az összehasonlításnál alap esetben az összes hashelt blokk elemeit összegezzük, majd ezeket összehasonlítjuk. Jelenleg mivel csak egy blokk lehetséges, ezért csak az első blokk hash értékét kell hozzáadni a kiindulási értékekehez és ezt összehasonlíani az előre ismert értékekkel.
+Az összehasonlításnál alap esetben az összes hashelt blokk elemeit összegezzük, majd ezeket összehasonlítjuk. Jelenleg mivel csak egy blokk lehetséges, ezért csak az első blokk hash értékét kell hozzáadni a kiindulási értékekhez és ezt összehasonlítani az előre ismert értékekkel.
 
-A hashelés eredménye minden esetben egy 8 elemű uint tömb lesz, amit a kiiratáshoz hexadecimális karaktersorozattá alakítunk. Jelenleg felesleges ezt átalakítani, ezért a host oldalon előre kiszámoljuk a hash uint felírását és definiáljuk azt a kernelben fordítás előtt. Ezzel egyrészt nem lesz szükséges egy nagyobb karaktertömmbe átkonvertálni az uint elemeket, másrészt az összehasonlításnál 64 byte méretű terület összehasonlítása helyett 8 darab 32 bites területet hasonlítunk.
+A hashelés eredménye minden esetben egy 8 elemű uint tömb lesz, amit a kiíratáshoz hexadecimális karaktersorozattá alakítunk. Jelenleg felesleges ezt átalakítani, ezért a host oldalon előre kiszámoljuk a hash uint felírását és definiáljuk azt a kernelben fordítás előtt. Ezzel egyrészt nem lesz szükséges egy nagyobb karaktertömmbe átkonvertálni az uint elemeket, másrészt az összehasonlításnál 64 byte méretű terület összehasonlítása helyett 8 darab 32 bites területet hasonlítunk.
 
 Bontsuk a hash-et 8 részre, ahol $H$ a feltörésre szánt hash, $h$ a jelenlegi blokkból számolt hash, $D$ a kiindulási állapot és $n$ a blokkok száma. Ekkor a hash-ek egyeznek, ha minden komponensük egyezik:
 %
 \begin{multicols}{2}
-
     \begin{equation*}
         \begin{split}
             H_1 = D_1 + \sum_{i=1}^{n} h_1^i \; , \\
@@ -1240,13 +1261,11 @@ Bontsuk a hash-et 8 részre, ahol $H$ a feltörésre szánt hash, $h$ a jelenleg
             H_8 = D_8 + \sum_{i=1}^{n} h_8^i \; ; \\
         \end{split}
     \end{equation*}
-    
 \end{multicols}
-
+%
 A mi esetünkben kizárólag egy blokk lesz használva, ezért az egyenletek egyszerűsíthetőek.
-
+%
 \begin{multicols}{2}
-
     \begin{equation*}
         \begin{split}
             H_1 = D_1 + h_1^1 \; , \\
@@ -1264,9 +1283,8 @@ A mi esetünkben kizárólag egy blokk lesz használva, ezért az egyenletek egy
             H_8 = D_8 + h_8^1 \; ; \\
         \end{split}
     \end{equation*}
-    
 \end{multicols}
-
+%
 Ezen értékekből a kernel fordításának időpontjában ismert számunkra $H$ és $D$ egy konstans érték. Ezért ezen műveletek egy részét már a fordító elvégezheti, amennyiben átrendezzük a műveleteket. Akkor bizonyítottuk hogy a megadott kulcs megegyezik a megkapott hash-el ha:
 %
 \begin{equation*}
@@ -1276,7 +1294,7 @@ Ezen értékekből a kernel fordításának időpontjában ismert számunkra $H$
     \end{aligned}
 \end{equation*}
 
-A programkóban a ($H_1$ ... $H_8$) $\Rightarrow$ (HASH\_0 ... HASH\_7), ($h_1$ ... $h_8$) $\Rightarrow$ (A ... H), ($D_1$ ... $D_8$) $\Rightarrow$ (H0 ... H7). Mivel az egyenlőségjelek jobb oldalán található kivonás mindkét eleme ismert fordítási időben preprocesszor definícióként, ezért a végleges kódba annak a kiszámolt verziója kerül be. Ennek köszönhetően összesen 1..8 darab egész szám egyenlőségvizsgálat fog megtörténni. Amennyiben az adott szálon bizonyítottuk a kulcsok egyezését, a szál száma plusz egy belekerül az eredmény uint-be, amelyet később a c++ oldalon kiolvasunk. A szálak számozása 0-tól indul, azonban jelenleg a 0 érték (amelyet host-tól kapunk) azt fogja jelenti, hogy nem találtuk az értéket, ezért egyezés esetén a szál számához egyet hozzá kell adnia a kernelnek.
+A programkódban a ($H_1$ ... $H_8$) $\Rightarrow$ (HASH\_0 ... HASH\_7), ($h_1$ ... $h_8$) $\Rightarrow$ (A ... H), ($D_1$ ... $D_8$) $\Rightarrow$ (H0 ... H7). Mivel az egyenlőségjelek jobb oldalán található kivonás mindkét eleme ismert fordítási időben preprocesszor definícióként, ezért a végleges kódba annak a kiszámolt verziója kerül be. Ennek köszönhetően összesen 1..8 darab egész szám egyenlőségvizsgálat fog megtörténni. Amennyiben az adott szálon bizonyítottuk a kulcsok egyezését, a szál száma plusz egy belekerül az eredmény uint-be, amelyet később a c++ oldalon kiolvasunk. A szálak számozása 0-tól indul, azonban jelenleg a 0 érték (amelyet host-tól kapunk) azt fogja jelenti, hogy nem találtuk az értéket, ezért egyezés esetén a szál számához egyet hozzá kell adnia a kernelnek.
 
 \lstset{caption={Egyszerűsített hash egyenlőség vizsgálata.}, label=src:cpp}
 \begin{lstlisting}[language={C++}]
@@ -1297,28 +1315,30 @@ if (A == HASH_0 - H0 && B == HASH_1 - H1 &&
         \hline
         \hline
         
-        CPU 1 & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; h/s$ & & \\
+        CPU & $\num{116 019 598} \; \mu s \approx \num{116.0}s $ & $\approx \num{32 196} \; H/s$ & & \\
         \hline
                             
-        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; h/s$ & $+550.2\%$ & \\
+        GPU 1 & $\num{21 490 658} \; \mu s \approx \num{21.5}s $ & $\approx \num{173 814} \; H/s$ & $+550.2\%$ & \\
         \hline
         
-        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{173 814} \; h/s$ & $+9.5\%$ & Double Buffer \\
+        GPU 2 & $\num{20 201 236} \; \mu s \approx \num{20.2}s $ & $\approx \num{190 322} \; H/s$ & $+9.5\%$ & Double Buffer \\
         \hline
         
-        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{174 509} \; h/s$ & $+0.4\%$ & Preprocessor \\
+        GPU 3 & $\num{20 112 915} \; \mu s \approx \num{20.1}s $ & $\approx \num{191 091} \; H/s$ & $+0.4\%$ & Preprocessor \\
         \hline
         
-        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; h/s$ & $+665.7\%$ & Cstdio \\
+        GPU 4 & $\num{3 034 589} \; \mu s \approx \num{3.0}s $ & $\approx \num{1 157 085} \; H/s$ & $+665.7\%$ & Cstdio \\
         \hline
         
-        GPU 5 & $\num{1 083 921} \; \mu s \approx \num{1.0}s $ & $\approx \num{3 239 422} \; h/s$ & $+279.9\%$ & Release/x64 \\
+        GPU 5 & $\num{1 083 921} \; \mu s \approx \num{1.0}s $ & $\approx \num{3 239 422} \; H/s$ & $+279.9\%$ & Release/x64 \\
         \hline
         
-        GPU 5 & $\num{308 774} \; \mu s \approx \num{0.3}s $ & $\approx \num{12 097 414} \; h/s$ & $+373.4\%$ & Kernel \\
+        GPU 5 & $\num{308 774} \; \mu s \approx \num{0.3}s $ & $\approx \num{12 097 414} \; H/s$ & $+373.4\%$ & Kernel opt. \\
         
     \end{tabular}
-    \caption{Teljesítmény táblázat az OpenCL optimalizálások hozzáadásával.}
+    \caption{Teljesítmény táblázat az OpenCL kernel optimalizálások hozzáadásával.}
 \end{table}
+
+Az eredmények alapján az én rendszeremen elért véglesges maximális teljesítmény ~12 MH/s, amely egy jelentős 376 szoros előrelépés az első CPU verzióhoz képest és 70 szeres teljesítmény növekedés az első GPU verzióhoz képest.
 
 %CURRENT 3735367 compare in 0.308774 = 12 097 414 per sec

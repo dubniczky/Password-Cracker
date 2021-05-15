@@ -68,7 +68,7 @@ public:
 	/**
 	  * Attaches the specified device to the instance.
 	  * @param props The propterties to attach the device with.
-	  * @return Device successfully attached.
+	  * @return Is device successfully attached.
 	 */
 	bool attachDevice(const KernelProperties& props);
 

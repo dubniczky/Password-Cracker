@@ -29,7 +29,7 @@ crack single ../../passwords/passwords-100k.txt Hf45DD9c9e82db146a9bfe73b43aebfa
 */
 
 
-//Test
+//Memleak test
 #ifdef _DEBUG
 	#define _CRTDBG_MAP_ALLOC
 	#include <stdlib.h>

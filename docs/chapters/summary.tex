@@ -1,0 +1,27 @@
+\chapter{Konklúzió} % Conclusion
+
+
+
+
+\section{Összegzés}
+
+\label{ch:sum}
+
+Elkészítettem C++-ban egy SHA256 jelszó hash feltörő programot, amely a konfiguráció feldolgozása után elkészít egy OpenCL kernelt és lefordítja azt az adott rendszerre optimalizálva. Ezek után elkezdi a jelszó feltörését egy megkapott gyakran használt jelszavakat tartalmazó tetszőlegesen nagy fájl használatával. A program képes megkülönböztetni salt-al ellátott és alap SHA256 hash-eket.
+
+Emellett a futtatásnál kapcsolókkal beállítható a használt eszköz, az egyszerre feltörendő adatok mennyisége és a maximális kulcsméret. Minden egyes parancs egyértelműen és olvashatóan meghatározza a feladatot, amely elindítása után a program részletes leírást ad a felhasználónak a futás jelenlegi állapotáról.
+
+
+
+
+\section{Fejlesztési Lehetőségek}
+
+A program egy használható és szükségesen személyre szabható formában van, számos érdekes fejlesztési lehetőséget tartogat. Felsoroltam néhány lehetőséget, a sorrend jelentőségteljessége nélkül.
+
+\begin{itemize}
+    \item Automatikus sebesség-optimalizálás és konfiguráció. Egy további parancs (pl.\ ,,-t'' kapcsoló) egy referencia jelszó fájl használatával variálja a  beállításokat, amíg szükségesen megközelíti a leggyorsabb konfigurcicót az adott rendszerre. A kapott konfigurációt mint ajánlást átadja a felhasználónak, aki további finomhangolást eszközölhet.
+    \item Egy felhasználói felület elkészítése, ahol a felhasználó távolról figyelheti és irányíthatja a program működését. Pl.\ egy websocket kliensen keresztül böngészőből, tetszőleges eszközről.
+    \item Több számítási eszköz egyidejű használata. Ez több-videókártyás szerverek esetén lehet hasznos.
+    \item Jelszó metamorfizmus támogatása. Minden, az adatbázisban lévő jelszón kisebb változtatásokat kipróbálni, amelyeket emberek gyakran használnak a jelszavak bonyolítására. Például (i) betű (!)-re cserélése, kötőjel szóköz helyett, vagy születési dátum jelszó mögé helyezése.
+    \item Több hash feltörése egy időben.
+\end{itemize}

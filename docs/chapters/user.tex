@@ -1,204 +1,204 @@
 \chapter{Felhasználói dokumentáció} % User guide
 \label{ch:user}
 
-Lorem ipsum dolor sit amet $\mathbb{N}$\nomenclature{$\mathbb{N}$}{Set of natural numbers}, consectetur adipiscing elit. Duis nibh leo, dapibus in elementum nec, aliquet id sem. Suspendisse potenti. Nullam sit amet consectetur nibh. Donec scelerisque varius turpis at tincidunt. Cras a diam in mauris viverra vehicula. Vivamus mi odio, fermentum vel arcu efficitur, lacinia viverra nibh. Aliquam aliquam ante mi, vel pretium arcu dapibus eu. Nulla finibus ante vel arcu tincidunt, ut consectetur ligula finibus. Mauris mollis lectus sed ipsum bibendum, ac ultrices erat dictum. Suspendisse faucibus euismod lacinia $\mathbb{Z}$\nomenclature{$\mathbb{Z}$}{Set of integer numbers}.
 
 
-\section{Felsorolások} % Enumerations and lists
+% SW purpose
+\section{A Szoftver Célja} 
 
-Etiam vel odio ante. Etiam pulvinar nibh quis massa auctor congue. Pellentesque quis odio vitae sapien molestie vestibulum sit amet et quam. Pellentesque vel dui eget enim hendrerit finibus at sit amet libero. Quisque sollicitudin ultrices enim, nec porta magna imperdiet vitae. Cras condimentum nunc dui, eget molestie nunc accumsan vel.
+A szoftver egy SHA-256 algoritmussal hash-elt jelszavak feltörésére alkalmas C++ és OpenCL-ben írt program. A célja a modern videókártya használat hatásának vizsgálata a jelszófeltörés sebességére nézve. Jelenleg a program képes videokártya használatával hash-elni egy jelszót, egy fájl megadásával hashelni több jelszót, vagy feltörni egy általános, vagy salt-al ellátott jelszót, amennyiben az szerepel a megadott ismert jelszavak listában. Ezt a feladatát speciálisan a használt rendszerre optimalizálva teszi.
 
-\begin{itemize}
-	\item Fusce in aliquet neque, in pretium sem.
-	\item Donec tincidunt tellus id lectus pretium fringilla.
-	\item Nunc faucibus, erat pretium tempus tempor, tortor mi fringilla neque, ac congue ex dui vitae mauris.
-\end{itemize}
-
-Donec dapibus sodales ante, at scelerisque nunc laoreet sit amet. Mauris porttitor tincidunt neque, vel ullamcorper neque pulvinar et. Integer eu lorem euismod, faucibus lectus sed, accumsan felis. Nunc ornare mi at augue vulputate, eu venenatis magna mollis. Nunc sed posuere dui, et varius nulla. Sed mollis nibh augue, eget scelerisque eros ornare nec.
-
-\begin{enumerate}
-	\item\label{step:first} Donec pretium et quam a cursus. Ut sollicitudin tempus urna et mollis.
-	\item Aliquam et aliquam turpis, sed fermentum mauris. Nulla eget ex diam.
-	\item Donec eget tellus pharetra, semper neque eget, rutrum diam Step~\ref{step:first}.
-\end{enumerate}
-
-Praesent porta, metus eget eleifend consequat, eros ligula eleifend ex, a pellentesque mi est vitae urna. Vivamus turpis nunc, iaculis non leo eget, mattis vulputate tellus. Maecenas rutrum eros sem, pharetra interdum nulla porttitor sit amet. In vitae viverra ante. Maecenas sit amet placerat orci, sed tincidunt velit. Vivamus mattis, enim vel suscipit elementum, quam odio venenatis elit\footnote{Phasellus faucibus varius purus, nec tristique enim porta vitae.}, et mollis nulla nunc a risus. Praesent purus magna, tristique sed lacus sit amet, convallis malesuada magna. 
-
-\begin{description}
-	\item[Vestibulum venenatis] malesuada enim, ac auctor erat vestibulum et. Phasellus id purus a leo suscipit accumsan.
-	\item[Orci varius natoque] penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nullam interdum rhoncus nisl, vel pharetra arcu euismod sagittis. Vestibulum ac turpis auctor, viverra turpis at, tempus tellus.
-	\item[Morbi dignissim] erat ut rutrum aliquet. Nulla eu rutrum urna. Integer non urna at mauris scelerisque rutrum sed non turpis.
-\end{description}
-
-\subsection{Szoros térközű felsorolások} % Lists with narrow spacing inbetween items
-
-Phasellus ultricies, sapien sit amet ultricies placerat, velit purus viverra ligula, id consequat ipsum odio imperdiet enim:
-\begin{compactenum}
-	\item Maecenas eget lobortis leo.
-	\item Donec eget libero enim.
-	\item In eu eros a eros lacinia maximus ullamcorper eget augue.
-\end{compactenum}
-
-\bigskip
-
-In quis turpis metus. Proin maximus nibh et massa eleifend, a feugiat augue porta. Sed eget est purus. Duis in placerat leo. Donec pharetra eros nec enim convallis:
-\begin{compactitem}
-	\item Pellentesque odio lacus.
-	\item Maximus ut nisl auctor.
-	\item Sagittis vulputate lorem.
-\end{compactitem}
-
-\bigskip
-
-Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed lorem libero, dignissim vitae gravida a, ornare vitae est.
-\begin{compactdesc}
-	\item[Cras maximus] massa commodo pellentesque viverra.
-	\item[Morbi sit] amet ante risus. Aliquam nec sollicitudin mauris
-	\item[Ut aliquam rhoncus sapien] luctus viverra arcu iaculis posuere
-\end{compactdesc}
+A programot biztonságtechnikai kutatóknak, vagy diákoknak javaslom, akik érdekeltek abban, hogy milyen sebességgel törhető fel egy biztonságosnak számító jelszó a számukra elérhető hardverekkel.
 
 
-\section{Képek, ábrák} % Images and figures
-
-Aliquam vehicula luctus mi a pretium. Nulla quam neque, maximus nec velit in, aliquam mollis tortor. Aliquam erat volutpat. Curabitur vitae laoreet turpis. Integer id diam ligula. Nulla sodales purus id mi consequat, eu venenatis odio pharetra. Cras a arcu quam. Suspendisse augue risus, pulvinar a turpis et, commodo aliquet turpis. Nulla aliquam scelerisque mi eget pharetra. Mauris sed posuere elit, ac lobortis metus. Proin lacinia sit amet diam sed auctor. Nam viverra orci id sapien sollicitudin, a aliquam lacus suscipit, Figure~\ref{fig:example-1}:
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.6\textwidth,height=100px]{elte_cimer_szines}
-	\caption{Quisque ac tincidunt leo}
-	\label{fig:example-1}
-\end{figure}
-
-\subsection{Képek szegélyezése} % Framing figures
-
-Ut aliquet nec neque eget fermentum. Cras volutpat tellus sed placerat elementum. Quisque neque dui, consectetur nec finibus eget, blandit id purus. Nam eget ipsum non nunc placerat interdum.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.6\textwidth,height=100px,frame]{elte_cimer_szines}
-	\caption{Quisque ac tincidunt leo}
-\end{figure}
-
-\subsection{Képek csoportosítása} % Subfigures
-
-In non ipsum fermentum urna feugiat rutrum a at odio. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nulla tincidunt mattis nisl id suscipit. Sed bibendum ac felis sed volutpat. Nam pharetra nisi nec facilisis faucibus. Aenean tristique nec libero non commodo. Nulla egestas laoreet tempus. Nunc eu aliquet nulla, quis vehicula dui. Proin ac risus sodales, gravida nisi vitae, efficitur neque, Figure~\ref{fig:example-2}:
-
-\begin{figure}[H]
-	\centering
-	\subfigure[Vestibulum quis mattis urna]{
-		\includegraphics[width=0.45\linewidth]{elte_cimer_szines}}
-	\hspace{5pt}
-	\subfigure[Donec hendrerit quis dui sit amet venenatis]{
-		\includegraphics[width=0.45\linewidth]{elte_cimer_szines}}
-	\caption{Aenean porttitor mi volutpat massa gravida}
-	\label{fig:example-2}
-\end{figure}
-
-Nam et nunc eget elit tincidunt sollicitudin. Quisque ligula ipsum, tempor vitae tortor ut, commodo rhoncus diam. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Phasellus vehicula quam dui, eu convallis metus porta ac.
+\section{A Szoftver Használata}
 
 
-\section{Táblázatok} % Tables
+%System requirements
+\subsection{Rendszerkövetelmények}
 
-Nam magna ex, euismod nec interdum sed, sagittis nec leo. Nam blandit massa bibendum mattis tristique. Phasellus tortor ligula, sodales a consectetur vitae, placerat vitae dolor. Aenean consequat in quam ac mollis. 
+A program Microsoft Windows operációs rendszeren futtatható exe formájában érhető el.
 
 \begin{table}[H]
-	\centering
-	\begin{tabular}{ | m{0.25\textwidth} | m{0.65\textwidth} | }
-		\hline
-		\textbf{Phasellus tortor} & \textbf{Aenean consequat} \\
-		\hline \hline
-		\emph{Sed malesuada} & Aliquam aliquam velit in convallis ultrices. \\
-		\hline
-		\emph{Purus sagittis} &  Quisque lobortis eros vitae urna lacinia euismod. \\
-		\hline
-		\emph{Pellentesque} & Curabitur ac lacus pellentesque, eleifend sem ut, placerat enim. Ut auctor tempor odio ut dapibus. \\
-		\hline
-	\end{tabular}
-	\caption{Maecenas tincidunt non justo quis accumsan}
-	\label{tab:example-1}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        & Minimális  & Optimális (vagy újabb/jobb) \\
+        \hline
+        Operációs Rendszer & Microsoft Windows 7 & Microsoft Windows 10 \\
+        \hline
+        Videókártya  & OpenCL-t támogató   & \begin{tabular}[c]{@{}l@{}}NVidia GeForce GTX 600-as széria\\
+                                                            AMD Radeon R9/ HD 7000 széria
+                                             \end{tabular}\\
+        \hline
+        Háttértár & 7200 RPM HDD & M.2 PCIe SSD \\
+        \hline
+    \end{tabular}
+    \caption{A program rendszerkövetelményei.}
 \end{table}
 
-\subsection{Sorok és oszlopok egyesítése} % Multi rows and multi columns
 
-Mauris a dapibus lectus. Vestibulum commodo nibh ante, ut maximus magna eleifend vel. Integer vehicula elit non lacus lacinia, vitae porttitor dolor ultrices. Vivamus gravida faucibus efficitur. Ut non erat quis arcu vehicula lacinia. Nulla felis mauris, laoreet sed malesuada in, euismod et lacus. Aenean at finibus ipsum. Pellentesque dignissim elit sit amet lacus congue vulputate.
+%Installation
+\subsection{Telepítés}
 
-\begin{table}[htb]
-	\centering
-	\begin{tabular}{ | c | r | r | r | r | r | r | }
-		\hline
-		\multirow{2}{*}{\textbf{Quisque}} & \multicolumn{2}{ c | }{\textbf{Suspendisse}} & \multicolumn{2}{ c | }{\textbf{Aliquam}} & \multicolumn{2}{ c | }{\textbf{Vivamus}} \\
-		\cline{2-7}
-		& Proin & Nunc & Proin & Nunc & Proin & Nunc \\
-		\hline \hline		
-		Leo & 2,80 MB & 100\% & 232 KB & 8,09\% & 248 KB & 8,64\% \\
-		\hline
-		Vel & 9,60 MB & 100\% & 564 KB & 5,74\% & 292 KB & 2,97\% \\
-		\hline
-		Auge & 78,2 MB & 100\% & 52,3 MB & 66,88\% & 3,22 MB & 4,12\% \\
-		\hline 
-	\end{tabular}
-	\caption[Rövid cím a táblázatjegyzékbe]{Vivamus ac arcu fringilla, fermentum neque sed, interdum erat. Mauris bibendum mauris vitae enim mollis, et eleifend turpis aliquet.}
-	\label{tab:example-2}
+A program letöltése után egy zip állomány áll a rendelkezésre. Ezt az állomány kell kicsomagolni egy erre alkalmas programmal (például 7-Zip) és a benne található mappát egy megfelelő helyre helyezni. Fontos, hogy a mappában található fájlok mindegyike továbbra is azonos mappában helyezkedjen el, ezen kívül bárhová helyezhető a számítógépen, ahol ön rendelkezik olvasási és futtatási joggal.
+
+A program futtatása a konzolon keresztül a fájlokat tartalmazó mappából történik, ezért érdemes kényelmes elérést biztosítani a fájlhoz. Erre egy jó módszer lehet például az alapértelmezett C meghajtó gyökérkönyvtárába helyezni a mappát, amely a következő helyen elérhető lesz: C:\textbackslash gpucrack\textbackslash
+
+
+
+%Contols
+\subsection{Vezérlés}
+
+A szoftver konzolos felületen indítási paraméterek megadásával konfigurálható. A szoftvert tartalmazó mappában megnyitott konzol ablakban a következő paranccsal tudjuk futtatni a programot (.\textbackslash sha256gpu.exe). Ekkor angol nyelven a program felsorolja a használható parancsokat, amelyek közül választhatunk:
+%
+\begin{itemize}
+    \item platform - Felsorolja az elérhető platformokat és eszközöket.
+    \item hash single <password> - Hash-el egy jelszót, majd kiírja az eredményt.
+    \item hash single <password> <salt> - Hash-el egy jelszót egy salt-al együtt, majd kiírja az eredményt.
+    \item hash multiple <source> <target> - Első paraméterként egy enterrel elválasztott kulcsokkal teli fájlt adhatunk meg, amely mindegyikét hashelni és enterrel elválasztva a target-nek meghatározott fájlba írja.
+    \item crack single <source> <hash> - A megadott hash kódot megpróbálja a passwords fájlban található jelszavak segítségével feltörni. Amennyiben sikerül, kiírja az eredeti kulcsot, ellenkező esetben jelzi, hogy nem talált megfelelő kulcsot.
+\end{itemize}
+
+\noindent Ezek mellett minden parancsnak megadhatunk egy kapcsolót.
+%
+\begin{table}[H]
+\centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        Kapcsoló                          & Alapértelmezett & Hatás                                          \\
+        \hline
+        -p \textless{}id\textgreater{}    & 0                     & A használt platform kiválasztása               \\
+        \hline
+        -d \textless{}id\textgreater{}    & 0                     & A használt eszköz kiválasztása                 \\
+        \hline
+        -t \textless{}count\textgreater{} & 1024                  & Egyszerre feltörhető jelszavak száma \\
+        \hline
+        -k \textless{}size\textgreater{}  & 24                    & Egy bemeneti kulcs maximális mérete \\
+        \hline
+    \end{tabular}
+    \caption{A programban használható kapcsolók leírása}
 \end{table}
 
-\subsection{Több oldalra átnyúló táblázatok} % Long tables over multiple pages
+Minden kapcsoló használata opcionális, azonban a -t kifejezetten fontos az optimális sebesség elérésének érdekében, amelyet egy néhány teszt futtatással finomhangolni lehet. A -p és -d kapcsolók kizárólag akkor relevánsak, ha nem az alapértelmezett eszközt használjuk feltörésre. A kulcs maximális méretének csökkenése egy minimális teljesítmény növekedést eredményezhet, amennyiben ismert hogy, a maximum használt jelszó mérete például 16 volt és a mintadokumentum kizárólag ekkora vagy, ennél rövidebb jelszavakat tartalmaz.
 
-Nunc porta placerat leo, sit amet porttitor dui porta molestie. Aliquam at fermentum mi. Maecenas vitae lorem at leo tincidunt volutpat at nec tortor. Vivamus semper lacus eu diam laoreet congue. Vivamus in ipsum risus. Nulla ullamcorper finibus mauris non aliquet. Vivamus elementum rhoncus ex ut porttitor.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/diagrams/use-case.png}
+    \caption{Use-case diagram.}
+    \label{fig:use-case}
+\end{figure}
 
-\begin{center}
-	\begin{longtable}{ | p{0.3\textwidth} | p{0.7\textwidth} | }
-		
-		\hline
-		\multicolumn{2}{|c|}{\textbf{Praesent aliquam mauris enim}}
-		\\ \hline
-		
-		\emph{Suspendisse potenti} & \emph{Lorem ipsum dolor sit amet}
-		\\ \hline \hline
-		\endfirsthead % első oldal fejléce
-		
-		\hline
-		\emph{Suspendisse potenti} & \emph{Lorem ipsum dolor sit amet}
-		\\ \hline \hline
-		\endhead % többi oldal fejléce
-		
-		\hline
-		\endfoot % többi oldal lábléce
-		
-		\endlastfoot % utolsó oldal lábléce
-		
-		\emph{Praesent}
-		& Nulla ultrices et libero sit amet fringilla. Nunc scelerisque ante tempus sapien placerat convallis.
-		\\ \hline
-		
-		\emph{Luctus}
-		& Integer hendrerit erat massa, non hendrerit risus convallis at. Curabitur ultrices, justo in imperdiet condimentum, neque tortor luctus enim, luctus posuere massa erat vitae nibh.
-		\\ \hline
-		
-		\emph{Egestas}
-		& Duis fermentum feugiat augue in blandit. Mauris a tempor felis. Pellentesque ultricies tristique dignissim. Pellentesque aliquam semper tristique. Nam nec egestas dolor. Vestibulum id elit quis enim fringilla tempor eu a mauris. Aliquam vitae lacus tellus. Phasellus mauris lectus, aliquam id leo eget, auctor dapibus magna. Fusce lacinia felis ac elit luctus luctus.
-		\\ \hline
-		
-		\emph{Dignissim}
-		& Praesent aliquam mauris enim, vestibulum posuere massa facilisis in. Suspendisse potenti. Nam quam purus, rutrum eu augue ut, varius vehicula tellus. Fusce dui diam, aliquet sit amet eros at, sollicitudin facilisis quam. Phasellus tempor metus vel augue gravida pretium. Proin aliquam aliquam blandit. Nulla id tempus mi. Fusce in aliquam tortor.
-		\\ \hline
-		
-		\emph{Pellentesque}
-		& Donec felis nibh, imperdiet a arcu non, vehicula gravida nibh. Quisque interdum sapien eu massa commodo, ac elementum felis faucibus.
-		\\ \hline
-		
-		\emph{Molestie}
-		& Cras ullamcorper tellus et auctor ultricies. Maecenas tincidunt euismod lectus nec venenatis. Suspendisse potenti. Pellentesque pretium nunc ut euismod cursus. Nam venenatis condimentum quam. Curabitur suscipit efficitur aliquet. Interdum et malesuada fames ac ante ipsum primis in faucibus.
-		\\ \hline
-		
-		\emph{Vivamus semper}
-		& In purus purus, faucibus eu libero vulputate, tristique sodales nunc. Nulla ut gravida dolor. Fusce vel pellentesque mi, vel efficitur eros. Nunc vitae elit tellus. Sed vestibulum auctor consequat. 
-		\\ \hline
-		
-		\emph{Condimentum}
-		& Nulla scelerisque, leo et facilisis pretium, risus enim cursus turpis, eu suscipit ipsum ipsum in mauris. Praesent eget pulvinar ipsum, suscipit interdum nunc. Nam varius massa ut justo ullamcorper sollicitudin. Vivamus facilisis suscipit neque, eu fermentum risus. Ut at mi mauris.
-		\\ \hline
-		
-		\caption{Praesent ullamcorper consequat tellus ut eleifend}
-		\label{tab:example-3}		
-	\end{longtable}
-\end{center}
+
+
+
+
+%Input
+\subsection{Bemenet}
+
+A bemeneti értékek minden parancsra különböznek, azonban ezek kategóriákra oszthatóak.
+%
+\begin{itemize}
+    \item <password> jelszó: egy karaktersorozat, amely kizárólag az UTF-8 táblázat elemeit tartalmazhatja
+    \item <salt> salt: a követelmény megegyezik a jelszóéval
+    \item <source> fájl: egy fájlt egyértelműen meghatározó elérési útvonal. Lehet abszolút és relatív. A fájl tartalmának ASCII, vagy utf-8 karaktereknek kell lennie, amelyeket sortörés karakterek választanak el egymástól.
+    \item <target> fájl: egy fájlt egyértelműen meghatározó elérési útvonal. Lehet abszolút és relatív. A fájl vagy nem létezik (a mappában kell rendelkezni írási joggal), vagy írható (a régi fájl felülírásra kerül). Ha a mappa nem írható az ön felhasználói profiljából, indítsa a programot rendszergazdaként!
+    \item <hash> hash: 64 hexadecimális (0-9, a-f) karaktert tartalmazó szöveg. Amennyiben salt-al rendelkezik, azok a karakterek a hash előtt helyezkednek el hozzáfűzve ahhoz. Ilyen esetben lehet hosszabb a szöveg mint 64 karakter.
+\end{itemize}
+%
+Amennyiben a program hibát észlel a bemenetekkel, azonnal megszakítja a futást és a felhasználó tudtára adja, hogy mi okozta azt.
+
+
+
+
+
+
+%Output
+\subsection{Kimenet}
+
+A program a kimenetet többnyire az azt elindító konzolos ablakba írja. Ezzel együtt minden esetleges hibaüzenet, vagy sikertelen futás eredménye is oda kerül. A kimenetek ezen felül tartalmaznak részletes információt például a megkapott hash felbontásáról és a futásidőről.
+%
+\begin{itemize}
+    \item platform: a számítógépen található platformok és eszközök listája
+    \item hash sinle: a megadott jelszó, vagy jelszó és salt sha256 hash alakja
+    \item hash multiple: a megadott jelszófájl jelszavainak a sha256 hash-jei a target fájlban.
+    \item crack single: amennyiben sikeres volt a feltörés a hash-hez tartozó jelszó és egyéb információk, amennyiben nem volt sikeres, akkor ezt kiírja a felhasználónak.
+\end{itemize}
+
+
+
+
+
+%Examples
+\subsection{Példák}
+
+Paraméter nélküli indítás:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-empty.png}
+\end{figure}
+
+Számítási hardware-platformok kiíratása:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-platform.png}
+\end{figure}
+
+Hash kiszámítása:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-hash.png}
+\end{figure}
+
+Jelszó sikeres feltörése:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-crack.png}
+\end{figure}
+
+Jelszó sikertelen feltörése:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-crack-unsuccessful.png}
+\end{figure}
+
+Jelszó paraméterezett feltörése:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-crack-params.png}
+\end{figure}
+
+Jelszavak hashelése kimeneti fájlba:
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-hash-multiple.png}
+\end{figure}
+
+Jelszó és hash-fájlok tartalma (bal: bemenet, jobb: kimenet):
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/examples/example-hash-files.png}
+\end{figure}
+
+
+\subsection{Hiba Esetén}
+
+A program hiba esetén leáll és leírással próbálja segíteni a probléma diagnosztizálását. Amennyiben ismeretlen hiba történik, próbálja meg a következő lépéseket elvégezni:
+%
+\begin{enumerate}
+    \item Ellenőrizze le, hogy a parancs megfelelő formátumú-e.
+    \item Próbálja meg kapcsolók nélkül futtatni a programot.
+    \item Indítsa el a programot a (platform) parancs segítségével és bizonyosodjon meg róla, hogy található legalább egy eszköz.
+    \item Frissítse a használni kívánt eszközt a legújabb driver verzióra.
+    \item Frissítse a C++ Runtime szolgáltatást a legújabb verzióra.
+    \item Amennyiben fájlal dolgozik, bizonyosodjon meg róla, hogy az elérési út megfelelő, a fájlhoz van hozzáférése és az olvasható.
+    \item Bizonyosodjom meg róla hogy az eredeti zip-ben tárolt fájlok mindegyike megtalálható a futtatható fájlal egy mappában.
+    \item Futtassa a programot rendszergazdai jogosultsággal.
+\end{enumerate}

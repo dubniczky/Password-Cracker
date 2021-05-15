@@ -20,7 +20,7 @@
 %% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 %% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %% SOFTWARE.
-
+% Ivan valtoztatásai: L405 \Req...{algorithmic}; L433 %\renewcommand{\algorithmiccomment}[1]{\hfill {\it #1}}
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{elteikthesis}[2020/11/23 ELTE FI bachelor and master thesis template]
 
@@ -402,7 +402,7 @@
 % ------------------------------
 % Algoritmusok és kódblokkok írása
 \RequirePackage{algorithm}
-\RequirePackage{algorithmic}
+%\RequirePackage{algorithmic}
 \RequirePackage{listingsutf8}
 \lstset{
 	basicstyle=\footnotesize\ttfamily,
@@ -430,7 +430,7 @@
 % Forráskódjegyzék elnevezése
 \renewcommand{\lstlistlistingname}{\lstcodelabel}
 % Algoritmus kommentek jobb szélre igazítása
-\renewcommand{\algorithmiccomment}[1]{\hfill {\it #1}}
+%\renewcommand{\algorithmiccomment}[1]{\hfill {\it #1}}
 % Algoritmus elnevezése
 \renewcommand{\ALG@name}{\alglabel}
 % ------------------------------

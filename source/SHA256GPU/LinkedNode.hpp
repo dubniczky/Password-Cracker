@@ -20,7 +20,7 @@ public:
 	 * Calculates the length of the list chain from this node.
 	 * @return The length.
 	 */
-	int calcLength()
+	int calcLength() const
 	{
 		if (next == nullptr) return 1;
 		else return next->calcLength() + 1;

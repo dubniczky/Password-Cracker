@@ -49,7 +49,21 @@ namespace tests
 		{
 			GPUController* gc = new GPUController();
 			Assert::IsNotNull(gc);
+
+            //Attaching default device
 			Assert::IsTrue(gc->attachDevice({}));
+
+			//Valid kernel properties
+			Assert::IsTrue( KernelProperties(0, 0, 5000, 22).valid());
+			Assert::IsTrue( KernelProperties(1, 3, 10, 3).valid());
+			Assert::IsFalse(KernelProperties(-1, 3, 10, 3).valid());
+			Assert::IsFalse(KernelProperties(0, 0, 5, 0).valid());
+			Assert::IsFalse(KernelProperties(0, 0, 0, 5).valid());
+
+			//Attach with kernel properties
+			Assert::IsTrue(gc->attachDevice(KernelProperties(0, 0, 5000, 22)));
+
+            
 
 			delete gc;
 		}
@@ -138,8 +152,6 @@ namespace tests
 				gc->crackSingleSalted(pass100k, "asdf7d9d10127d2c1a49684e2d2f258e1dc1ccf05649b5690dd55c311afe9ad16441"));
 			Assert::AreEqual(std::string("encloses"), //salt: Hf45DD
 				gc->crackSingleSalted(pass100k, "Hf45DD9c9e82db146a9bfe73b43aebfa89cd889a4fccc6fe916a66dcd497ecc4c182a2"));
-			Assert::AreEqual(std::string("encloses"), //salt: salty
-				gc->crackSingleSalted(pass100k, "saltyf15f5e154b278680181e34048a5ddea1ab29771d06a4adaa1db8bd482209821a"));
 			Assert::AreEqual(std::string("ex-wethouder"), //salt: salty
 				gc->crackSingleSalted(pass4m, "salty8d2b8da91ff28558d835c17ef91c07000bc58896ef7b98710c18dea92afb836f"));
 

@@ -12,7 +12,7 @@
 kernel void sha256single_kernel(uint keyLength, global char* key, global char* result)
 {
     //Initialize
-    int qua; //Message schedule step modulus
+    int qua; //Message schedule step quantity
     int mod; //Message schedule step modulus
     uint A, B, C, D, E, F, G, H; //Compression targets
     uint T1, T2; //Compression temp

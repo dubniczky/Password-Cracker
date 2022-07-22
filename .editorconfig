@@ -1,0 +1,12 @@
+# https://editorconfig.org
+
+root = true
+
+[*.{cpp,hpp,c,h,cl}]
+insert_final_newline = false
+indent_style = space
+indent_size = 4
+
+[*.md]
+insert_final_newline = true
+remove_trailing_whitespace = false

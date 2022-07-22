@@ -1,5 +1,6 @@
 # Password Hash Cracking on GPU
-*by: Richard Nagy, 2020/02 - 2020/04*
+
+*Richard Antal Nagy, 2020/02 - 2021/04*
 
 ## Support ❤️
 
@@ -15,8 +16,8 @@ Dictionary attacks however, are quite common. We take the most used passwords th
 
 In this project I will recreate such a hashing solution from scratch with the SHA-256 algorithm. First I will make a demo version on the GPU in C to serve as a benchmark and as a starting point for the transition to GPU, since C code very close to OpenCL kernel code.
 
+## Roadmap
 
-## Roadmap:
 1. Implementing standard SHA-256 algorithm on CPU
 2. Creating a linear password cracker using a table from file
 3. Implementing salt into the algorithm
@@ -27,31 +28,32 @@ In this project I will recreate such a hashing solution from scratch with the SH
 8. Optimizing Kernel Iteration 2
 9. **Project complete (current)**
 
+## Resources
 
-## Resources:
-* [Wikipedia: SHA-2](https://en.wikipedia.org/wiki/SHA-2) *algorithm*
-* [Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64) *storing in uints*
-* [Wikipedia: Salt (Crypgoraphy)](https://en.wikipedia.org/wiki/Salt_(cryptography)) *salt*
-* [Have I been pwned](https://haveibeenpwned.com/Passwords) *common password lists*
-* [Xorbin hash](https://xorbin.com/tools/sha256-hash-calculator) *verify results*
-* [ELTE Computer Graphics](http://cg.elte.hu/index.php/gpgpu/) *custom opencl c++ library*
-*  [NVIDIA OpenCL](https://www.nvidia.com/content/cudazone/CUDABrowser/downloads/papers/NVIDIA_OpenCL_BestPracticesGuide.pdf) *best practices guide*
-* [Radeon GPU Analyzer](https://gpuopen.com/gaming-product/radeon-gpu-analyzer-rga/) kernel disassemble for optimizing
+- [Wikipedia: SHA-2](https://en.wikipedia.org/wiki/SHA-2) *algorithm*
+- [Wikipedia: Base-64](https://en.wikipedia.org/wiki/Base64) *storing in uints*
+- [Wikipedia: Salt (Crypgoraphy)](https://en.wikipedia.org/wiki/Salt_(cryptography)) *salt*
+- [Have I been pwned](https://haveibeenpwned.com/Passwords) *common password lists*
+- [Xorbin hash](https://xorbin.com/tools/sha256-hash-calculator) *verify results*
+- [ELTE Computer Graphics](http://cg.elte.hu/index.php/gpgpu/) *custom opencl c++ library*
+- [NVIDIA OpenCL](https://www.nvidia.com/content/cudazone/CUDABrowser/downloads/papers/NVIDIA_OpenCL_BestPracticesGuide.pdf) *best practices guide*
+- [Radeon GPU Analyzer](https://gpuopen.com/gaming-product/radeon-gpu-analyzer-rga/) kernel disassemble for optimizing
 
-## Baseline hardware:
+## Baseline hardware
+
 | Component | Baseline |
 |---|---|
-|__MB__|ASUS Prime X470-PRO|
-|__CPU__|Ryzen 7 2700X *8c/16t 4.00Ghz @ base clock*|
-|__RAM__|Corsair Vengeance 2x8GB 2400Mhz DDR4 dual channel|
-|__GPU__|Nvidia Geforce GTX 1070: *6.463 Teraflops*|
-|__SSD__|Samsung 970 EVO 250GB|
+|**MB**|ASUS Prime X470-PRO|
+|**CPU**|Ryzen 7 2700X *8c/16t 4.00Ghz @ base clock*|
+|**RAM**|Corsair Vengeance 2x8GB 2400Mhz DDR4 dual channel|
+|**GPU**|Nvidia Geforce GTX 1070: *6.463 Teraflops*|
+|**SSD**|Samsung 970 EVO 250GB|
 
 *I will use this hardware for all the benchmarking unless stated otherwise.*
 
 ## Custom metric (hcps)
 
-We are going to use a custom metric to compare results: **Hash Compare Per Second** (hashcomp/sec). 
+We are going to use a custom metric to compare results: **Hash Compare Per Second** (hashcomp/sec).
 This of course means the amount of hashes we can compare every given second. This does NOT include the time to start the cracking itself and gathering the data at the end. We are only interested in the hash time itself since the program only starts once, but it can keep running for hours, days or weeks.. until we run out of samples to feed it.
 
 Being a scalar unit, we can even use prefix multipliers:
@@ -64,9 +66,11 @@ Implementing the **SHA-256** encryption algorithm on the CPU using exclusively C
 We have to generate an entirely new stack of variables for each hash, because the values get moved and modified every iteration. I used an object-orinted approach in the first iteration.
 
 Hash generating calls are going to be used in the following way:
+
 ```c
 const char* hash = sha256("mypassword");
 ```
+
 This of course is going to change later, but it helped isolate the variables and code needed exclusively for the hasing algorithm.
 
 I will use the standard way of using this algorithm:
@@ -101,18 +105,17 @@ The definition for the 256 bit context is going to be 8x32 bit integers correspo
 |0x|6a09e667|bb67ae85|3c6ef372|a54ff53a|510e527f|9b05688c|1f83d9ab|5be0cd19|
 
 Which gets folded into:  
-`764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF` 
+`764FAF5C61AC315F1497F9DFA542713965B785E5CC2F707D6468D7D1124CDFCF`
 This will serve as our starting point to the algorithm.
 
-These values can be easily calculated with the following **javascript** code by just pasting it into the console:
+These values can be easily calculated with the following **javascript** code by just pasting it into the browser console or NodeJS rutime:
 
 ```c
 (() => {
 [2,3,5,7,11,13,17,19].forEach((i) => 
-	console.log(parseInt((Math.sqrt(i) % 1).toString(2).slice(2, 34), 2).toString(16)))
+    console.log(parseInt((Math.sqrt(i) % 1).toString(2).slice(2, 34), 2).toString(16)))
 })()
 ```
-
 
 ## Milestone 2: Cracking using password-table *(completed)*
 
@@ -133,12 +136,14 @@ There are 3 main sample files in the project:
 |3,721,224|[passwords-4m.txt](https://gitlab.com/ivolv/passhash/-/blob/master/passwords/passwords-4m.txt)|
 
 The code can be compiled and run in the following way:
+
 ```bash
 g++ main.cpp -o crack.exe && .\crack.exe target.txt passwords.txt
 ```
 
-Example output by running with the __100k__ list:
-```
+Example output by running with the **100k** list:
+
+```txt
 Matching...
 Match found: banana
 Checked lines: 436
@@ -146,21 +151,22 @@ Search time: 12666 microseconds
 ```
 
 Let us try the worst case-scenario, when the correct match is not in the file. Then we can make some calculations. I am using the baseline computer for every test.
-```
+
+```txt
 Matching...
 Match not found
 Checked lines: 100000
 Search time: 2828609 microseconds
 ```
-So hashing and comparing ``100,000`` entries took ``2,828,609 microseconds`` = ``2.828609 seconds``. As a baseline, we are going to use the custom metric: __hashcomp/sec (hcps)__.
-`100,000/2.828609 = 35,353.0658...` so we are at about ``35.353 khcps``.
 
+So hashing and comparing ``100,000`` entries took ``2,828,609 microseconds`` = ``2.828609 seconds``. As a baseline, we are going to use the custom metric: **hashcomp/sec (hcps)**.
+`100,000/2.828609 = 35,353.0658...` so we are at about ``35.353 khcps``.
 
 ## Milestone 3: Implementing salt *(completed)*
 
 The current method of cracking seems unnecessary, since we could just pre-calculate the hashes and start comparing every time without needing to do the hashing every time.
 
-This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for __banana__ with 4 byte salts:  
+This is why [salts](https://en.wikipedia.org/wiki/Salt_(cryptography)) are commonly used in password storing. Salts are a random series of characters, that are attached to the end of the password before being hashed. Here are two a salted hashes for **banana** with 4 byte salts:  
 
 ``banana`` => ``bananakQ9wvI9A`` => ``50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee``  
 ``banana`` => ``bananaJoz1BL1T`` => ``7da2b105a959cff3b2c03c0c15fa11fa124636a21451eeead00cb7654c664f7e``  
@@ -173,14 +179,16 @@ Now however, we will need the salt to store the password as well, so we are just
 `kQ9wvI9A50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee`  
 
 We of course know, that this is a 256 bit hash, so there must be 64 characters for the hash, and every single before that is the salt. Te length of the salt can be any number of characters, so we have to be flexible about that.
-```
+
+```c
 data_length = { n | n >= 64 }
 hash_length = 64
 salt_length = data_length - 64
 ```
 
 Example run of the banana search using salts as well:
-```
+
+```bash
 Target: 'kQ9wvI9A50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee'
 Salt: 'kQ9wvI9A'
 Hash: '50622ccfa4c8f58bd952b62f7fafe47511fec498985921d6b13ac178cb413aee'
@@ -190,8 +198,10 @@ Match found: banana
 Checked lines: 436
 Search time: 12955 microseconds
 ```
-We simply remove the salt from the original target, and append it to every single  password in our list. This certainly makes it slower, so let us do our baseline test again with an __8 byte salt__:
-```
+
+We simply remove the salt from the original target, and append it to every single  password in our list. This certainly makes it slower, so let us do our baseline test again with an **8 byte salt**:
+
+```bash
 Target: '9Slcgkejw8nPUkI48e852ffc1b4f8f19849ad7b1072a3db4265780924154549d4b1ba9792c75c359'
 Salt: '9Slcgkejw8nPUkI4'
 Hash: '8e852ffc1b4f8f19849ad7b1072a3db4265780924154549d4b1ba9792c75c359'
@@ -201,6 +211,7 @@ Match not found
 Checked lines: 100000
 Search time: 3106065 microseconds
 ```
+
 So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds` = `3.106065 seconds`.
 `100,000/3.106065 = 32,195.0764...` => `~32.196 khcps`. This method seems about `9%` slower, but keep in mind that it will depend on the size of the salt. That however is almost never bigger than 16 bytes.
 
@@ -209,21 +220,24 @@ So hashing, salting and comparing `100,000` entries took `3,106,065 microseconds
 |Hash Compare|35.353 khcps|100%|
 |Salted Compare|32.196 khcps|91%|
 
-
 ## Milestone 4: Implementing SHA-256 on GPU *(completed)*
+
 In this step, the most difficult part is of course writing the kernel itself. It has to be able to calculate a single hash given a string and its length. The result length is fixed, so there will be no problems with that.
 
-Kernel definition: 
-```opencl
+Kernel definition:
+
+```c
 //hash_single.kernel.cl
 kernel void sha256single_kernel(uint key_length,
                                 global char* key,
                                 global uint* result)
 ```
+
 We can then feed the information using global memory buffers. Previously we defined some macros to speed up the code, which is not going to be necessary in this case, since the compiler merges every **inline** method into the kernel.
 
 Example:
-```opencl
+
+```c
 inline uint rotr(uint x, int n)
 {
     if (n < 32) return (x >> n) | (x << (32 - n));
@@ -234,8 +248,10 @@ inline uint sig0(uint x)
     return rotr(x, 2) ^ rotr(x, 13) ^ rotr(x, 22);
 }
 ```
+
 Gets merged into:
-```opencl
+
+```c
 inline uint sig0(uint x)
 {
     return ((2  < 32) ? (x >> 2)  | (x << (32 - 2)  : x) ^
@@ -243,8 +259,10 @@ inline uint sig0(uint x)
            ((22 < 32) ? (x >> 22) | (x << (32 - 22) : x);
 }
 ```
+
 Then simplified into:
-```opencl
+
+```c
 inline uint sig0(uint x)
 {
     return ((x >> 2)  | (x << (30))) ^
@@ -252,13 +270,16 @@ inline uint sig0(uint x)
            ((x >> 22) | (x << (10)));
 }
 ```
+
 Then inserted into the kernel calls as:
-```opencl
+
+```c
 ( ((x>>2)|(x<<30))^((x>>13)|(x<<19))^((x>>22)|(x<<10)) )
 ```
 
 So we are doing this for every single method.
-```opencl
+
+```c
 inline uint rotr(uint x, int n)
 inline uint ch(uint x, uint y, uint z)
 inline uint maj(uint x, uint y, uint z)
@@ -270,7 +291,7 @@ inline uint ep1(uint x)
 
 After implementing the standard hashing, we will add salt as well. Appending the salt to the end of the password ought to be done on the GPU itself. This way the process will be parallel and less data will be copied between hardware. The new kernel:
 
-```opencl
+```c
 //hash_single_salt.kernel.cl
 kernel void sha256kernel_salted(uint salt_length,
                                 global char* salt,
@@ -279,9 +300,9 @@ kernel void sha256kernel_salted(uint salt_length,
                                 global uint* result)
 ```
 
-Also a useful feature would be to feed in a file of keys to the gpu, which hashes them, then we write them to a file. To do this effectively, we should convert the __unsigned integer__ keys to __hex strings__. Since I cannot use sprintf as I did in C, I had to implement a lightweight way of converting on the gpu. This became the end result:
+Also a useful feature would be to feed in a file of keys to the gpu, which hashes them, then we write them to a file. To do this effectively, we should convert the **unsigned integer** keys to **hex strings**. Since I cannot use sprintf as I did in C, I had to implement a lightweight way of converting on the gpu. This became the end result:
 
-```opencl
+```c
 const char hex_charset[] = "0123456789abcdef";   
 #pragma unroll
 for (int j = 0; j < 8; j++)
@@ -307,7 +328,7 @@ For example:
 
 Now we can return a fix character length as result.
 
-```opencl
+```c
 //hash_multiple.kernel.cl
 kernel void sha256multiple_kernel(uint key_length,
                                   __global char* keys,
@@ -316,7 +337,7 @@ kernel void sha256multiple_kernel(uint key_length,
 
 We now have an increasing amount of features, so I separated them into their own files and created a smaller parameter switch to easily gain access to each .
 
-```
+```bash
 gpu platform
 gpu hash single <key>
 gpu hash single <key> <salt>
@@ -327,7 +348,7 @@ gpu hash multiple <infile> <outfile>
 
 Comparing is going to be similar to the multi hash. For optimization purposes I specified a 16 character maximum length limit for the input keys. The vast majority of passwords are less than that, and it is even used as a hard upper limit on numerous websites.
 
-```opencl
+```c
 //crack_single.kernel.cl
 kernel void sha256crack_single_kernel(uint key_length,
                                       global char* keys,
@@ -335,7 +356,7 @@ kernel void sha256crack_single_kernel(uint key_length,
                                       global char* results)
 ```
 
-In this case however, we pre-calculate the hash in __unsigned integer__ form once on the cpu, so conversion on gpu every time is unnecessary. We save about 3 microseconds per hash.
+In this case however, we pre-calculate the hash in **unsigned integer** form once on the cpu, so conversion on gpu every time is unnecessary. We save about 3 microseconds per hash.
 
 Hashing and comparing `100,000` entries took `568,904 microseconds` = `0.568904 seconds`. `100,000/0.568904 = 175,776.5809...` => `~175.776 khcps`. We can have our first real comparison with the CPU.
 
@@ -345,7 +366,7 @@ Hashing and comparing `100,000` entries took `568,904 microseconds` = `0.568904 
 |CPU Salted Compare|32.196 khcps|91%|
 |GPU Hash Compare|175.776 khcps|546%|
 
-This means a __~5.5 times__ improvement in the first run, so this proves that cracking on GPU is definitely more potent, at least on a computer like mine.
+This means a **~5.5 times** improvement in the first run, so this proves that cracking on GPU is definitely more potent, at least on a computer like mine.
 
 This version of the program can be accessed with the git commit SHA: `5161a028`
 Or you can download it from the tagged releases page: [Release v1.0](https://gitlab.com/richardnagy/passhash/-/tags/v1.0)
@@ -364,7 +385,7 @@ Or you can download it from the tagged releases page: [Release v1.0](https://git
 
 #### 1. Attempt: *preprocessor hash*
 
-Instead of passing in the hash as a **global** buffer, I did it with macros. The compiler seemingly optimizes single bulk read from global buffer well, so this did not improve performance above margin of error. 
+Instead of passing in the hash as a **global** buffer, I did it with macros. The compiler seemingly optimizes single bulk read from global buffer well, so this did not improve performance above margin of error.
 
 Chances have been reverted, however the scaffolding for passing in build options for the compiler remained.
 
@@ -452,7 +473,7 @@ This looks very similar, but it actually only makes one simple step. Starts read
 
 The results from this step turned out to be a massive improvement. So at this point, we should do our benchmark again.
 
-Hashing and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.086424 = 1,157,085.9946...` => `~1,157.085 khcps`. 
+Hashing and comparing `100,000` entries took `86,424 microseconds` = `0.086424 seconds`. `100,000/0.086424 = 1,157,085.9946...` => `~1,157.085 khcps`.
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -468,6 +489,7 @@ Also keep in mind, that the preparation to start the hashing is longer in case o
 ## Milestone 7: Implementing salt compare on GPU *(completed)*
 
 At this point we have quite a few variables that are constant during the whole life of the kernel:
+
 - Hash
 - Salt length
 - Key length
@@ -493,23 +515,24 @@ The problem is that we don't actually know these in the kernel, so we have to ad
 
 ```c
 sprintf(buildOptions,
-		"-D HASH_0=%u -D HASH_1=%u \
-	 	 -D HASH_2=%u -D HASH_3=%u \
-		 -D HASH_4=%u -D HASH_5=%u \
-		 -D HASH_6=%u -D HASH_7=%u \
-         -D KEY_LENGTH=%d \
-         -D SALT_LENGTH=%d \
-         -D SALT_STRING=\"%s\"",
-		 hash[0], hash[1],
-		 hash[2], hash[3],
-		 hash[4], hash[5],
-		 hash[6], hash[7],
-		 MAX_KEY_SIZE, saltLength, salt);
+    "-D HASH_0=%u -D HASH_1=%u \
+    -D HASH_2=%u -D HASH_3=%u \
+    -D HASH_4=%u -D HASH_5=%u \
+    -D HASH_6=%u -D HASH_7=%u \
+    -D KEY_LENGTH=%d \
+    -D SALT_LENGTH=%d \
+    -D SALT_STRING=\"%s\"",
+    hash[0], hash[1],
+    hash[2], hash[3],
+    hash[4], hash[5],
+    hash[6], hash[7],
+    MAX_KEY_SIZE, saltLength, salt
+);
 ```
 
 This still has one problem. You can't actually pass a string as a macro, so I had to convert it with the preprocessor of the kernel.
 
-```opencl
+```c
 //Helper macros
 #define STR(s) #s      //Takes macro and returns it as a string
 #define XSTR(s) STR(s) //Takes macro and passes its value to be stringified
@@ -520,7 +543,7 @@ char salt[] = XSTR(SALT_STRING); //Returns the value SALT_STRING as a string
 
 This way we can achieve just a tiny overhead when using salts in the gpu, since we only need to append the constant string. Also we know it's length to be a constant, so we can **unroll** the cycle.
 
-```opencl
+```c
 #pragma unroll
 for (unsigned int j = 0; j < SALT_LENGTH; j++)
 {
@@ -531,7 +554,7 @@ length += SALT_LENGTH;
 
 As you can see, if we disassemble this, the memory is going to be set statically. This makes it nearly instantaneous, so I couldn't detect a performance difference  above margin of error.
 
-```assembly
+```asm
 ; Disassembled using Radeon GPU Analyzer
 v_add_u32_e32       v4, v0, v2
 v_mov_b32_e32       v5, 0x67
@@ -545,7 +568,7 @@ ds_write_b8         v4, v5 offset:3
 
 One thing that makes is slower however, is having to copy the key string as well. Also longer key means more steps during hashing, so we get some performance penalty here.
 
-Hashing, salting and comparing `100,000` entries took `88,469 microseconds` = `0.088469 seconds`. `100,000/0.088469 = 1,130,339.4409...` => `~1,130.339 khcps`. 
+Hashing, salting and comparing `100,000` entries took `88,469 microseconds` = `0.088469 seconds`. `100,000/0.088469 = 1,130,339.4409...` => `~1,130.339 khcps`.
 
 Hash compare was `1,130.339 khcps`, so this means about `~2.3%` lost performance if we are using an 8 bit salt.
 
@@ -577,7 +600,7 @@ The optimal thread count is lower than the maximum allocation size of the gpu an
 
 So the optimal size for my setup is somewhere between `32,768` and `65,536`. I continue the trials by halving the intervals and testing which side is minimal. The best result came from `46,960` threads with `39,885` microseconds. Which seems promising, so let's benchmark again.
 
-Hashing, salting and comparing `100,000` entries took `39,885 microseconds` = `0.039885 seconds`. `100,000/0.039885 = 2,507,208.2236...` => `~2,507.208 khcps`. 
+Hashing, salting and comparing `100,000` entries took `39,885 microseconds` = `0.039885 seconds`. `100,000/0.039885 = 2,507,208.2236...` => `~2,507.208 khcps`.
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -594,7 +617,7 @@ This means the GPU hash cracking is now `71 times` faster than using my single t
 
 The comparisons were impressive enough already, but there is one more thing. In the case of the GPU methods I included the time to read the data in the calculations as well. Which is the correct way, but I did not do that back with the CPU version. So let's exclude it for a final comparison.
 
-Hashing, salting and comparing `100,000` entries took `2,575 microseconds` = `0.002575 seconds`. `100,000/0.002575 = 38,834,951.4563...` => `~39 Mhcps` . 
+Hashing, salting and comparing `100,000` entries took `2,575 microseconds` = `0.002575 seconds`. `100,000/0.002575 = 38,834,951.4563...` => `~39 Mhcps` .
 
 |Method|Speed|Relative|
 |---|---|---|
@@ -613,7 +636,6 @@ This means the GPU hash cracking true power is `1098 times` faster than using my
 This has been a great project and a spectacular learning experience for me in the field of parallel computing. I would like to especially thank **Iván Eichhardt** from *ELTE Computer Graphics department* for being available to help when I hit some roadblocks.
 
 And of course, thank you for reading.
-
 
 Richard Nagy,
 2020/04

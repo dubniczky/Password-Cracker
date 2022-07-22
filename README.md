@@ -1,7 +1,13 @@
 # Password Hash Cracking on GPU
 *by: Richard Nagy, 2020/02 - 2020/04*
 
-## Quick Description
+## Support ❤️
+
+If you find the project useful, please consider supporting, or contributing.
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/dubniczky)
+
+## Description
 
 We use hashes to protect user password from being exposed in the event of a breach. Servers use algorithms that create so-called hashes, which are impossible to reverse but even so, you can start trying to guess the password normally it takes so long that is not technically feasible with our current technology.
 

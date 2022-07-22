@@ -29,5 +29,6 @@ Release/
 bin/
 obj/
 
-# VSC Config folders
+# Editor configuration
 .vs/
+.vscode/

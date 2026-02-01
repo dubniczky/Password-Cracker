@@ -1,12 +1,6 @@
 # Password Hash Cracking on GPU
 
-*Richard Antal Nagy, 2020/02 - 2021/04*
-
-## Support ❤️
-
-If you find the project useful, please consider supporting, or contributing.
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/dubniczky)
+*Richard Dubniczky, 2020/02 - 2021/04*
 
 ## Description
 
